@@ -1,0 +1,57 @@
+#:kivy 2.1.0
+
+#:import NoTransition kivy.uix.screenmanager.NoTransition
+#:include screen_splash.kv
+#:include screen_pipe_setting.kv
+#:include screen_machine_setting.kv
+#:include screen_advanced_setting.kv
+#:include screen_operate_manual.kv
+#:include screen_operate_auto.kv
+#:include screen_compile.kv
+
+ScreenManager:
+    id: screen_manager
+    transition: NoTransition()
+    Screen:
+        name: 'screen_splash'
+        ScreenSplash:
+            app_window: app
+            screen_manager: screen_manager
+            screen_pipe_setting: screen_pipe_setting
+
+    Screen:
+        name: 'screen_pipe_setting'
+        ScreenPipeSetting:
+            id: screen_pipe_setting
+            screen_manager: screen_manager
+
+    Screen:
+        name: 'screen_machine_setting'
+        ScreenMachineSetting:
+            id: screen_machine_setting
+            screen_manager: screen_manager
+
+    Screen:
+        name: 'screen_advanced_setting'
+        ScreenAdvancedSetting:
+            id: screen_advanced_setting
+            screen_manager: screen_manager
+
+    Screen:
+        name: 'screen_operate_manual'
+        ScreenOperateManual:
+            id: screen_operate_manual
+            screen_manager: screen_manager
+
+    Screen:
+        name: 'screen_operate_auto'
+        ScreenOperateAuto:
+            id: screen_operate_auto
+            screen_manager: screen_manager
+
+    Screen:
+        name: 'screen_compile'
+        ScreenCompile:
+            id: screen_compile
+            screen_manager: screen_manager
+                  
