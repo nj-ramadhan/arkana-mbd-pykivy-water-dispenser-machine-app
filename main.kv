@@ -2,12 +2,11 @@
 
 #:import NoTransition kivy.uix.screenmanager.NoTransition
 #:include screen_splash.kv
-#:include screen_pipe_setting.kv
-#:include screen_machine_setting.kv
-#:include screen_advanced_setting.kv
+#:include screen_choose_product.kv
+#:include screen_choose_payment.kv
 #:include screen_operate_manual.kv
 #:include screen_operate_auto.kv
-#:include screen_compile.kv
+#:include screen_info.kv
 
 ScreenManager:
     id: screen_manager
@@ -17,24 +16,19 @@ ScreenManager:
         ScreenSplash:
             app_window: app
             screen_manager: screen_manager
-            screen_pipe_setting: screen_pipe_setting
+            screen_choose_product: screen_choose_product
 
     Screen:
-        name: 'screen_pipe_setting'
-        ScreenPipeSetting:
-            id: screen_pipe_setting
+        name: 'screen_choose_product'
+        ScreenChooseProduct:
+            id: screen_choose_product
             screen_manager: screen_manager
+            screen_choose_payment: screen_choose_payment
 
     Screen:
-        name: 'screen_machine_setting'
-        ScreenMachineSetting:
-            id: screen_machine_setting
-            screen_manager: screen_manager
-
-    Screen:
-        name: 'screen_advanced_setting'
-        ScreenAdvancedSetting:
-            id: screen_advanced_setting
+        name: 'screen_choose_payment'
+        ScreenChoosePayment:
+            id: screen_choose_payment
             screen_manager: screen_manager
 
     Screen:
@@ -50,8 +44,8 @@ ScreenManager:
             screen_manager: screen_manager
 
     Screen:
-        name: 'screen_compile'
-        ScreenCompile:
-            id: screen_compile
+        name: 'screen_info'
+        ScreenInfo:
+            id: screen_info
             screen_manager: screen_manager
                   

@@ -1,0 +1,121 @@
+#:kivy 2.1.0
+
+<ScreenChoosePayment>:
+    BoxLayout:
+        orientation: "vertical"
+		# header layout
+        BoxLayout:
+            id: header_layout
+            orientation: "horizontal"
+            padding: 20
+			size_hint_y: 0.1
+
+            BoxLayout:
+                orientation: "vertical"
+                padding: 0, 15
+
+                Label:
+                    id: subtitle            
+                    text: "Water Dispenser Machine"
+                    bold: True
+                    font_size: 64
+                    color: 0, 0, 0
+                    
+            Image:
+                id: logo
+                source:'asset/Main_Logo.png'
+                size_hint_x: 0.25
+                allow_stretch: True                  
+		
+		# payment layout
+		BoxLayout:
+			id: layout_choose_payment
+			orientation: "vertical"
+			size_hint_y: 0.5
+			padding:10
+			spacing:10
+
+			Label:
+				text: "CHOOSE PAYMENT"
+				bold: True
+				font_size: 48
+				color: 0, 0, 0
+				size_hint_y: 0.1
+				
+			BoxLayout:
+				orientation: "vertical"
+				GridLayout:
+					cols:3
+					row_force_default: True
+					row_default_height: 350
+					padding:50
+					spacing:50
+
+					MDCard:
+						id: payment_gopay
+						orientation: "vertical"
+						size_hint: None, None
+						size: "200dp", "150dp"
+						pos_hint: {"center_x": .5, "center_y": .5}
+						ripple_behavior: True
+						on_press: root.pay("GOPAY")
+
+						Image:
+							source:'asset/Logo_Gopay.png'
+							size_hint_x: 1.2
+							pos_hint: {"center_x": .5, "center_y": .5}
+							allow_stretch: True 
+
+						MDRelativeLayout:
+							MDLabel:
+								text: "GOPAY"
+								adaptive_size: True
+								color: "grey"
+								pos: "12dp", "12dp"
+								bold: True
+
+					MDCard:
+						id: payment_ovo
+						orientation: "vertical"
+						size_hint: None, None
+						size: "200dp", "150dp"
+						pos_hint: {"center_x": .5, "center_y": .5}
+						ripple_behavior: True
+						on_press: root.pay("OVO")
+
+						Image:
+							source:'asset/Logo_Ovo.png'
+							size_hint_x: 1.2
+							pos_hint: {"center_x": .5, "center_y": .5}
+							allow_stretch: True 
+
+						MDRelativeLayout:
+							MDLabel:
+								text: "OVO"
+								adaptive_size: True
+								color: "grey"
+								pos: "12dp", "12dp"
+								bold: True
+
+					MDCard:
+						id: payment_direct
+						orientation: "vertical"
+						size_hint: None, None
+						size: "200dp", "150dp"
+						pos_hint: {"center_x": .5, "center_y": .5}
+						ripple_behavior: True
+						on_press: root.pay("DIRECT")
+
+						Image:
+							source:'asset/Logo_Direct.png'
+							size_hint_x: 1.2
+							pos_hint: {"center_x": .5, "center_y": .5}
+							allow_stretch: True 
+
+						MDRelativeLayout:
+							MDLabel:
+								text: "DIRECT TRANSFER"
+								adaptive_size: True
+								color: "grey"
+								pos: "12dp", "12dp"
+								bold: True

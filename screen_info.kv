@@ -1,0 +1,59 @@
+#:kivy 2.1.0
+
+<ScreenInfo>:
+    BoxLayout:
+        orientation: "vertical"
+		# header layout
+        BoxLayout:
+            id: header_layout
+            orientation: "horizontal"
+            padding: 20
+			size_hint_y: 0.1
+
+            BoxLayout:
+                orientation: "vertical"
+                padding: 0, 15
+
+                Label:
+                    id: subtitle            
+                    text: "Water Dispenser Machine"
+                    bold: True
+                    font_size: 64
+                    color: 0, 0, 0
+                    
+            Image:
+                id: logo
+                source:'asset/Main_Logo.png'
+                size_hint_x: 0.25
+                allow_stretch: True                   
+
+
+		# setting layout
+		BoxLayout:
+			id: layout_info
+			orientation: "vertical"
+			size_hint_y: 0.5
+			padding:10
+			spacing:10
+
+			MDLabel:
+				text: "CHOOSE PRODUCT"
+				bold: True
+				font_size: 48
+				color: 0, 0, 0
+				size_hint_y: 0.1
+
+			MDTextField:
+				text: "This is information text"
+
+
+			MDRelativeLayout:
+				MDFillRoundFlatIconButton:
+					id: bt_screen_choose_product
+					icon: "water"
+					text: "PRODUCT LIST"
+					font_size: 28
+					size_hint: 0.15, 0.25
+					pos_hint: {"center_x": .85, "center_y": .5}
+					on_press: root.screen_choose_product()
+				

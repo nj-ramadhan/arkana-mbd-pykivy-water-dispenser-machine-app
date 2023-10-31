@@ -3,9 +3,9 @@
 <ScreenSplash>:
     BoxLayout:
         orientation: 'vertical'
-        padding: 25 , 25
+        padding: 100 , 50
         Label:
-            text: 'Pipe Bending CNC Machine'
+            text: 'Water Dispenser Machine'
             halign: 'center'
             valign: 'middle'
             font_size: 64
@@ -17,18 +17,12 @@
         BoxLayout:
             orientation: 'horizontal'
             padding: 25 , 25
-            size_hint_y: 0.2
+            size_hint_y: 0.15
 
             Image:
                 id: logo
-                source:'asset/logo_rafindo.png'
+                source:'asset/Secondary_Logo.png'
                 allow_stretch: True
-            
-            Image:
-                id: logo
-                source:'asset/logo_polman.png'
-                allow_stretch: True
-
 
         Label:
             text: ''
@@ -36,8 +30,6 @@
 
         MDProgressBar:
             id: progress_bar
-            padding: 100
-            spacing: 200
             size_hint_y: .03
             max: 100
             value: 1
@@ -54,7 +46,7 @@
             color: 0, 0, 0
 
         Label:
-            text: 'Developed by Polman Bandung & Rafindo Raya, Copyrights @2023'
+            text: 'Developed by Kick Your Plast Team, Copyrights @2023'
             halign: 'center'
             valign: 'middle'
             font_size: 30

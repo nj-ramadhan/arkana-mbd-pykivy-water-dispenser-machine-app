@@ -24,22 +24,16 @@
 
                 Label:
                     id: subtitle            
-                    text: "Pipe Bending CNC Machine"
+                    text: "Water Dispenser Machine"
                     bold: True
                     font_size: 64
                     color: 0, 0, 0
                     
             Image:
                 id: logo
-                source:'asset/logo_rafindo.png'
-                size_hint_x: 0.125
-                allow_stretch: True                   
-
-            Image:
-                id: logo
-                source:'asset/logo_polman.png'
-                size_hint_x: 0.125
-                allow_stretch: True    
+                source:'asset/Main_Logo.png'
+                size_hint_x: 0.25
+                allow_stretch: True   
 
 		# manual operate layout
 		BoxLayout:
@@ -167,12 +161,12 @@
 			spacing:10
 
 			MDFillRoundFlatIconButton:
-				id: bt_screen_pipe_setting
+				id: bt_screen_choose_product
 				icon: "cogs"
 				text: "PIPE SETTING"
 				font_size: 28
 				size_hint_x: 0.25
-				on_press: root.screen_pipe_setting()
+				on_press: root.screen_choose_product()
 			
 			MDFillRoundFlatIconButton:
 				id: bt_screen_machine_setting
@@ -183,12 +177,12 @@
 				on_press: root.screen_machine_setting()
 
 			MDFillRoundFlatIconButton:
-				id: bt_screen_advanced_setting
+				id: bt_screen_choose_payment
 				icon: "cogs"
 				text: "ADVANCED SETTING"
 				font_size: 28
 				size_hint_x: 0.25
-				on_press: root.screen_advanced_setting()
+				on_press: root.screen_choose_payment()
 
 			MDFillRoundFlatIconButton:
 				id: bt_screen_operate
@@ -199,9 +193,9 @@
 				on_press: root.screen_operate_auto()
 
 			MDFillRoundFlatIconButton:
-				id: bt_screen_compile
+				id: bt_screen_info
 				icon: "file"
 				text: "COMPILE FILE"
 				font_size: 28
 				size_hint_x: 0.25
-				on_press: root.screen_compile()
+				on_press: root.screen_info()
