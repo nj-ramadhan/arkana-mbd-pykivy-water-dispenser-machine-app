@@ -1,24 +1,25 @@
 #:kivy 2.1.0
 
 <ScreenChooseProduct>:
-    BoxLayout:
+    MDBoxLayout:
         orientation: "vertical"
 		# header layout
-        BoxLayout:
+        MDBoxLayout:
             id: header_layout
             orientation: "horizontal"
             padding: 20
-			size_hint_y: 0.1
+			spacing: 50
+			size_hint: 2, 0.15
 
-            BoxLayout:
+            MDBoxLayout:
                 orientation: "vertical"
                 padding: 0, 15
 
-                Label:
+                MDLabel:
                     id: subtitle            
-                    text: "Water Dispenser Machine"
+                    text: "WATER DISPENSER MACHINE"
                     bold: True
-                    font_size: 64
+                    font_size: 72
                     color: 0, 0, 0
                     
             Image:
@@ -28,22 +29,29 @@
                 allow_stretch: True                   
 
 
-		# setting layout
-		BoxLayout:
-			id: layout_choose_product
+		# choose product layout
+		MDBoxLayout:
+			id: layout_info
 			orientation: "vertical"
-			size_hint_y: 0.5
+			size_hint_y: 0.1
 			padding:10
 			spacing:10
 
-			Label:
+			MDLabel:
 				text: "CHOOSE PRODUCT"
 				bold: True
 				font_size: 48
 				color: 0, 0, 0
 				size_hint_y: 0.1
-				
-			BoxLayout:
+
+		MDBoxLayout:
+			id: layout_choose_payment
+			orientation: "vertical"
+			size_hint_y: 0.75
+			padding:10
+			spacing:10
+
+			MDBoxLayout:
 				orientation: "vertical"
 				GridLayout:
 					cols:3
@@ -62,8 +70,8 @@
 						on_press: root.choose_payment(250)
 
 						Image:
-							source:'asset/Mineral_Water.jpg'
-							size_hint_x: 1.2
+							source:'asset/250ml.png'
+							size_hint_x: 3
 							pos_hint: {"center_x": .5, "center_y": .5}
 							allow_stretch: True 
 
@@ -85,8 +93,8 @@
 						on_press: root.choose_payment(500)
 
 						Image:
-							source:'asset/Mineral_Water.jpg'
-							size_hint_x: 1.2
+							source:'asset/500ml.png'
+							size_hint_x: 3
 							pos_hint: {"center_x": .5, "center_y": .5}
 							allow_stretch: True 
 
@@ -108,8 +116,8 @@
 						on_press: root.choose_payment(750)
 
 						Image:
-							source:'asset/Mineral_Water.jpg'
-							size_hint_x: 1.2
+							source:'asset/750ml.png'
+							size_hint_x: 3
 							pos_hint: {"center_x": .5, "center_y": .5}
 							allow_stretch: True 
 
@@ -131,8 +139,8 @@
 						on_press: root.choose_payment(1000)
 
 						Image:
-							source:'asset/Mineral_Water.jpg'
-							size_hint_x: 1.2
+							source:'asset/1000ml.png'
+							size_hint_x: 3
 							pos_hint: {"center_x": .5, "center_y": .5}
 							allow_stretch: True 
 
@@ -144,13 +152,13 @@
 								pos: "12dp", "12dp"
 								bold: True
 
-			MDRelativeLayout:
-				MDFillRoundFlatIconButton:
-					id: bt_screen_info
-					icon: "information"
-					text: "INFO"
-					font_size: 28
-					size_hint: 0.15, 0.25
-					pos_hint: {"center_x": .85, "center_y": .5}
-					on_press: root.screen_info()
+	MDRelativeLayout:
+		MDFillRoundFlatIconButton:
+			id: bt_screen_info
+			icon: "information"
+			text: "INFO"
+			font_size: 28
+			size_hint: 0.25, 0.15
+			pos_hint: {"center_x": .85, "center_y": .15}
+			on_press: root.screen_info()
 				

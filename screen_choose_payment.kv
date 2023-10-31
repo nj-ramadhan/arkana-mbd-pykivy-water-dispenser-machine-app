@@ -1,48 +1,56 @@
 #:kivy 2.1.0
 
 <ScreenChoosePayment>:
-    BoxLayout:
+    MDBoxLayout:
         orientation: "vertical"
 		# header layout
-        BoxLayout:
+        MDBoxLayout:
             id: header_layout
             orientation: "horizontal"
             padding: 20
-			size_hint_y: 0.1
+			spacing: 50
+			size_hint: 2, 0.15
 
-            BoxLayout:
+            MDBoxLayout:
                 orientation: "vertical"
                 padding: 0, 15
 
-                Label:
+                MDLabel:
                     id: subtitle            
-                    text: "Water Dispenser Machine"
+                    text: "WATER DISPENSER MACHINE"
                     bold: True
-                    font_size: 64
+                    font_size: 72
                     color: 0, 0, 0
                     
             Image:
                 id: logo
                 source:'asset/Main_Logo.png'
                 size_hint_x: 0.25
-                allow_stretch: True                  
-		
-		# payment layout
-		BoxLayout:
-			id: layout_choose_payment
+                allow_stretch: True                   
+
+		# choose payment layout
+		MDBoxLayout:
+			id: layout_info
 			orientation: "vertical"
-			size_hint_y: 0.5
+			size_hint_y: 0.1
 			padding:10
 			spacing:10
 
-			Label:
+			MDLabel:
 				text: "CHOOSE PAYMENT"
 				bold: True
 				font_size: 48
 				color: 0, 0, 0
 				size_hint_y: 0.1
 				
-			BoxLayout:
+		MDBoxLayout:
+			id: layout_choose_payment
+			orientation: "vertical"
+			size_hint_y: 0.75
+			padding:10
+			spacing:10
+
+			MDBoxLayout:
 				orientation: "vertical"
 				GridLayout:
 					cols:3
@@ -55,8 +63,7 @@
 						id: payment_gopay
 						orientation: "vertical"
 						size_hint: None, None
-						size: "200dp", "150dp"
-						pos_hint: {"center_x": .5, "center_y": .5}
+						size: "250dp", "200dp"
 						ripple_behavior: True
 						on_press: root.pay("GOPAY")
 
@@ -78,8 +85,7 @@
 						id: payment_ovo
 						orientation: "vertical"
 						size_hint: None, None
-						size: "200dp", "150dp"
-						pos_hint: {"center_x": .5, "center_y": .5}
+						size: "250dp", "200dp"
 						ripple_behavior: True
 						on_press: root.pay("OVO")
 
@@ -101,8 +107,7 @@
 						id: payment_direct
 						orientation: "vertical"
 						size_hint: None, None
-						size: "200dp", "150dp"
-						pos_hint: {"center_x": .5, "center_y": .5}
+						size: "250dp", "200dp"
 						ripple_behavior: True
 						on_press: root.pay("DIRECT")
 
@@ -119,3 +124,14 @@
 								color: "grey"
 								pos: "12dp", "12dp"
 								bold: True
+
+	MDRelativeLayout:
+		MDFillRoundFlatIconButton:
+			id: bt_screen_choose_product
+			icon: "cancel"
+			text: "CANCEL"
+			font_size: 28
+			size_hint: 0.25, 0.15
+			pos_hint: {"center_x": .85, "center_y": .15}
+			on_press: root.screen_choose_product()
+				

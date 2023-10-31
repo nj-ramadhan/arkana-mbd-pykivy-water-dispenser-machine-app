@@ -4,9 +4,8 @@
 #:include screen_splash.kv
 #:include screen_choose_product.kv
 #:include screen_choose_payment.kv
-#:include screen_operate_manual.kv
-#:include screen_operate_auto.kv
 #:include screen_info.kv
+#:include screen_operate.kv
 
 ScreenManager:
     id: screen_manager
@@ -32,15 +31,9 @@ ScreenManager:
             screen_manager: screen_manager
 
     Screen:
-        name: 'screen_operate_manual'
-        ScreenOperateManual:
-            id: screen_operate_manual
-            screen_manager: screen_manager
-
-    Screen:
-        name: 'screen_operate_auto'
-        ScreenOperateAuto:
-            id: screen_operate_auto
+        name: 'screen_operate'
+        ScreenOperate:
+            id: screen_operate
             screen_manager: screen_manager
 
     Screen:

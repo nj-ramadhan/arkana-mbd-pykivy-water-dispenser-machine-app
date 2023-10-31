@@ -98,26 +98,44 @@ class ScreenChoosePayment(BoxLayout):
         print(method)
         try:
             if(method=="GOPAY"):
+                time.sleep(0.5)
+                self.screen_manager.current = 'screen_operate'
                 print("payment gopay")
+                toast("successfully pay with GOPAY")
+
             elif(method=="OVO"):
                 print("payment ovo")
+                toast("successfully pay with OVO")
             elif(method=="DIRECT"):
                 print("payment direct")
         except:
             print("payment error")
-        
 
-class ScreenOperateManual(BoxLayout):
-    screen_manager = ObjectProperty(None)
+    def screen_choose_product(self):
+        self.screen_manager.current = 'screen_choose_product'
 
-    def __init__(self, **kwargs):      
-        super(ScreenOperateManual, self).__init__(**kwargs)
-
-class ScreenOperateAuto(BoxLayout):
+class ScreenOperate(BoxLayout):
     screen_manager = ObjectProperty(None)
 
     def __init__(self, **kwargs):       
-        super(ScreenOperateAuto, self).__init__(**kwargs)
+        super(ScreenOperate, self).__init__(**kwargs)
+
+    def move_up(self):
+        print("move up")
+        toast("moving tumbler base up")
+
+    def move_down(self):
+        print("move down")
+        toast("moving tumbler base down")
+
+    def fill_start(self):
+        print("fill start")
+        toast("water filling is started")
+
+    def fill_stop(self):
+        print("fill stop")
+        toast("thank you for decreasing plastic bottle trash by buying our product")
+        self.screen_manager.current = 'screen_choose_product'
 
 class ScreenInfo(BoxLayout):
     screen_manager = ObjectProperty(None)
