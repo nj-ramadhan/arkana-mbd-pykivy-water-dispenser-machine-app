@@ -5,22 +5,20 @@
         orientation: "vertical"
 		# header layout
         MDBoxLayout:
-            id: header_layout
+            id: layout_header
             orientation: "horizontal"
             padding: 20
 			spacing: 50
 			size_hint: 2, 0.15
 
-            MDBoxLayout:
-                orientation: "vertical"
-                padding: 0, 15
-
-                MDLabel:
-                    id: subtitle            
-                    text: "WATER DISPENSER MACHINE"
-                    bold: True
-                    font_size: 72
-                    color: 0, 0, 0
+			MDLabel:
+				id: subtitle            
+				text: "WATER DISPENSER MACHINE"
+				halign: 'center'
+				valign: 'middle'
+				bold: True
+				font_size: 72
+				color: 0, 0, 0
                     
             Image:
                 id: logo
@@ -28,35 +26,40 @@
                 size_hint_x: 0.25
                 allow_stretch: True                   
 
-		# choose payment layout
+
+		# choose product layout
 		MDBoxLayout:
-			id: layout_info
+			id: layout_title
 			orientation: "vertical"
-			size_hint_y: 0.1
+			md_bg_color: app.theme_cls.primary_color
+			size_hint: 2, 0.1
 			padding:10
 			spacing:10
 
 			MDLabel:
-				text: "CHOOSE PAYMENT"
+				text: "CHOOSE PAYMENT METHOD"
+				halign: 'center'
+				valign: 'middle'    
 				bold: True
 				font_size: 48
-				color: 0, 0, 0
+				color: 1, 1, 1
 				size_hint_y: 0.1
 				
 		MDBoxLayout:
 			id: layout_choose_payment
 			orientation: "vertical"
-			size_hint_y: 0.75
-			padding:10
-			spacing:10
+			md_bg_color: app.theme_cls.accent_color
+			size_hint: 2, 0.75
+			padding:20
+			spacing:20
 
 			MDBoxLayout:
 				orientation: "vertical"
 				GridLayout:
 					cols:3
 					row_force_default: True
-					row_default_height: 350
-					padding:50
+					row_default_height: 300
+					padding:40
 					spacing:50
 
 					MDCard:

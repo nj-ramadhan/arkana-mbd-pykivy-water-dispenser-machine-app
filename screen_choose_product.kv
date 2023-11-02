@@ -5,22 +5,20 @@
         orientation: "vertical"
 		# header layout
         MDBoxLayout:
-            id: header_layout
+            id: layout_header
             orientation: "horizontal"
             padding: 20
 			spacing: 50
 			size_hint: 2, 0.15
 
-            MDBoxLayout:
-                orientation: "vertical"
-                padding: 0, 15
-
-                MDLabel:
-                    id: subtitle            
-                    text: "WATER DISPENSER MACHINE"
-                    bold: True
-                    font_size: 72
-                    color: 0, 0, 0
+			MDLabel:
+				id: subtitle            
+				text: "WATER DISPENSER MACHINE"
+				halign: 'center'
+				valign: 'middle'
+				bold: True
+				font_size: 72
+				color: 0, 0, 0
                     
             Image:
                 id: logo
@@ -31,126 +29,118 @@
 
 		# choose product layout
 		MDBoxLayout:
-			id: layout_info
+			id: layout_title
 			orientation: "vertical"
-			size_hint_y: 0.1
+			md_bg_color: app.theme_cls.primary_color
+			size_hint: 2, 0.1
 			padding:10
 			spacing:10
 
 			MDLabel:
 				text: "CHOOSE PRODUCT"
+				halign: 'center'
+				valign: 'middle'    
 				bold: True
 				font_size: 48
-				color: 0, 0, 0
+				color: 1, 1, 1
 				size_hint_y: 0.1
 
-		MDBoxLayout:
-			id: layout_choose_payment
-			orientation: "vertical"
-			size_hint_y: 0.75
-			padding:10
-			spacing:10
+		MDGridLayout:
+			cols:3
+			md_bg_color: app.theme_cls.accent_color
+			row_force_default: True
+			row_default_height: 300
+			size_hint: 2, 0.75
+			padding:40
+			spacing:50
 
-			MDBoxLayout:
+			MDCard:
+				id: product_220ml
 				orientation: "vertical"
-				GridLayout:
-					cols:3
-					row_force_default: True
-					row_default_height: 350
-					padding:50
-					spacing:50
+				size_hint: None, None
+				size: "420dp", "250dp"
+				pos_hint: {"center_x": .5, "center_y": .5}
+				ripple_behavior: True
+				on_press: root.choose_payment(220)
 
-					MDCard:
-						id: product_250ml
-						orientation: "vertical"
-						size_hint: None, None
-						size: "420dp", "250dp"
-						pos_hint: {"center_x": .5, "center_y": .5}
-						ripple_behavior: True
-						on_press: root.choose_payment(250)
+				Image:
+					source:'asset/220ml.png'
+					size_hint_x: 3
+					pos_hint: {"center_x": .5, "center_y": .5}
+					allow_stretch: True 
 
-						Image:
-							source:'asset/250ml.png'
-							size_hint_x: 3
-							pos_hint: {"center_x": .5, "center_y": .5}
-							allow_stretch: True 
+				MDRelativeLayout:
+					MDLabel:
+						text: "220ml"
+						adaptive_size: True
+						pos: "12dp", "12dp"
+						bold: True
 
-						MDRelativeLayout:
-							MDLabel:
-								text: "250ml"
-								adaptive_size: True
-								color: "grey"
-								pos: "12dp", "12dp"
-								bold: True
+			MDCard:
+				id: product_330ml
+				orientation: "vertical"
+				size_hint: None, None
+				size: "420dp", "250dp"
+				pos_hint: {"center_x": .5, "center_y": .5}
+				ripple_behavior: True
+				on_press: root.choose_payment(330)
 
-					MDCard:
-						id: product_500ml
-						orientation: "vertical"
-						size_hint: None, None
-						size: "420dp", "250dp"
-						pos_hint: {"center_x": .5, "center_y": .5}
-						ripple_behavior: True
-						on_press: root.choose_payment(500)
+				Image:
+					source:'asset/330ml.png'
+					size_hint_x: 3
+					pos_hint: {"center_x": .5, "center_y": .5}
+					allow_stretch: True 
 
-						Image:
-							source:'asset/500ml.png'
-							size_hint_x: 3
-							pos_hint: {"center_x": .5, "center_y": .5}
-							allow_stretch: True 
+				MDRelativeLayout:
+					MDLabel:
+						text: "330ml"
+						adaptive_size: True
+						pos: "12dp", "12dp"
+						bold: True
 
-						MDRelativeLayout:
-							MDLabel:
-								text: "500ml"
-								adaptive_size: True
-								color: "grey"
-								pos: "12dp", "12dp"
-								bold: True
+			MDCard:
+				id: product_600ml
+				orientation: "vertical"
+				size_hint: None, None
+				size: "420dp", "250dp"
+				pos_hint: {"center_x": .5, "center_y": .5}
+				ripple_behavior: True
+				on_press: root.choose_payment(600)
 
-					MDCard:
-						id: product_750ml
-						orientation: "vertical"
-						size_hint: None, None
-						size: "420dp", "250dp"
-						pos_hint: {"center_x": .5, "center_y": .5}
-						ripple_behavior: True
-						on_press: root.choose_payment(750)
+				Image:
+					source:'asset/600ml.png'
+					size_hint_x: 3
+					pos_hint: {"center_x": .5, "center_y": .5}
+					allow_stretch: True 
 
-						Image:
-							source:'asset/750ml.png'
-							size_hint_x: 3
-							pos_hint: {"center_x": .5, "center_y": .5}
-							allow_stretch: True 
+				MDRelativeLayout:
+					MDLabel:
+						text: "600ml"
+						adaptive_size: True
+						pos: "12dp", "12dp"
+						bold: True
 
-						MDRelativeLayout:
-							MDLabel:
-								text: "750ml"
-								adaptive_size: True
-								color: "grey"
-								pos: "12dp", "12dp"
-								bold: True
+			MDCard:
+				id: product_1000ml
+				orientation: "vertical"
+				size_hint: None, None
+				size: "420dp", "250dp"
+				pos_hint: {"center_x": .5, "center_y": .5}
+				ripple_behavior: True
+				on_press: root.choose_payment(1000)
 
-					MDCard:
-						id: product_1000ml
-						orientation: "vertical"
-						size_hint: None, None
-						size: "420dp", "250dp"
-						pos_hint: {"center_x": .5, "center_y": .5}
-						ripple_behavior: True
-						on_press: root.choose_payment(1000)
+				Image:
+					source:'asset/1000ml.png'
+					size_hint_x: 3
+					pos_hint: {"center_x": .5, "center_y": .5}
+					allow_stretch: True 
 
-						Image:
-							source:'asset/1000ml.png'
-							size_hint_x: 3
-							pos_hint: {"center_x": .5, "center_y": .5}
-							allow_stretch: True 
-
-						MDRelativeLayout:
-							MDLabel:
-								text: "1000ml"
-								adaptive_size: True
-								color: "grey"
-								pos: "12dp", "12dp"
-								bold: True
+				MDRelativeLayout:
+					MDLabel:
+						text: "1000ml"
+						adaptive_size: True
+						pos: "12dp", "12dp"
+						bold: True
 
 	MDRelativeLayout:
 		MDFillRoundFlatIconButton:

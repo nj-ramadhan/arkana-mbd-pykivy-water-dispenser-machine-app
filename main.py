@@ -19,16 +19,16 @@ from kivy.properties import StringProperty
 import time
 
 colors = {
-    "Red": {
-        "A200": "#EE2222",
-        "A500": "#EE2222",
-        "A700": "#EE2222",
+    "Blue": {
+        "200": "#A3D8DD",
+        "500": "#A3D8DD",
+        "700": "#A3D8DD",
     },
 
-    "Blue": {
-        "200": "#3D969E",
-        "500": "#3D969E",
-        "700": "#3D969E",
+    "BlueGray": {
+        "200": "#09343C",
+        "500": "#09343C",
+        "700": "#09343C",
     },
 
     "Light": {
@@ -142,6 +142,11 @@ class ScreenInfo(BoxLayout):
 
     def __init__(self, **kwargs):
         super(ScreenInfo, self).__init__(**kwargs)
+        file_info = open("info.txt", "r")
+        text_info = file_info.read()
+        new_text_info = text_info.replace("\n", ".")
+        print(new_text_info)
+        # self.ids.text_info.text = "new_text_info"
 
     def screen_choose_product(self):
         self.screen_manager.current = 'screen_choose_product'
@@ -153,12 +158,13 @@ class WaterDispenserMachineApp(MDApp):
 
     def build(self):
         self.theme_cls.colors = colors
-        self.theme_cls.primary_palette = "Blue"
-        self.icon = 'asset/logo.ico'
-        Window.fullscreen = 'auto'
-        Window.borderless = True
-        # Window.size = 1366, 768
-        Window.allow_screensaver = True
+        self.theme_cls.primary_palette = "BlueGray"
+        self.theme_cls.accent_palette = "Blue"
+        self.icon = 'asset/Icon_Logo.png'
+        # Window.fullscreen = 'auto'
+        # Window.borderless = True
+        Window.size = 1366, 768
+        # Window.allow_screensaver = True
 
         screen = Builder.load_file('main.kv')
 
