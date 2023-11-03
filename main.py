@@ -56,6 +56,83 @@ pump_2 = False
 linear_motor = False
 stepper_open_close = False
 
+# if(not DEBUG):
+from gpiozero import Button
+from gpiozero import RotaryEncoder
+from gpiozero import DigitalInputDevice
+from gpiozero import Motor
+from gpiozero import DigitalOutputDevice
+
+proximity = Button(17)
+waterFlow = RotaryEncoder(21,20)
+isOpened = Button(27)
+isClosed = Button(22)
+
+valveIO = DigitalOutputDevice(16)
+pump1 = DigitalOutputDevice(5)
+pump2 = DigitalOutputDevice(6)
+stepperEn = DigitalOutputDevice(23)
+stepperDir = DigitalOutputDevice(24)
+stepperPul = DigitalOutputDevice(12)
+linearMotor = Motor(25,26)
+
+def valveAct(exec : bool):
+    global valveIO
+    if (exec):
+        valveIO.on()
+        print('valve on')
+    else :
+        valveIO.off()
+        print('valve off')
+
+def pump1Act(exec : bool):
+    global pump1
+    if (exec):
+        pump1.on()
+        print('pump 1 on')
+    else :
+        pump1.off()
+        print('pump 1 off')
+
+def pump2Act(exec : bool):
+    global pump2
+    if (exec):
+        pump2.on()
+        print('pump 2 on')
+    else :
+        pump2.off()
+        print('pump 2 off')
+
+def stepperAct(exec : str):
+    global stepperEn, stepperDir ,stepperPul, isOpened, isClosed
+    
+    stepperEn.on()
+    
+    if (exec == 'open'):
+        stepperDir.on()
+        while not isOpened.value:
+            stepperPul.value = 0.5
+        
+        stepperPul.value = 0
+    else:
+        stepperDir.off()
+        while not isClosed.value:
+            stepperPul.value = 0.5
+        
+        stepperPul.value = 0
+
+def linearMotorAct(exec : str):
+    global linearMotor
+    
+    if (exec == 'up'):
+        linearMotor.forward()
+    else:
+        linearMotor.backward()
+    
+    linearMotor.stop()
+
+    
+
 class ScreenSplash(MDBoxLayout):
     screen_manager = ObjectProperty(None)
     app_window = ObjectProperty(None)
@@ -117,7 +194,7 @@ class ScreenChoosePayment(MDBoxLayout):
                 print("payment ovo")
                 self.screen_manager.current = 'screen_operate'
                 toast("successfully pay with OVO")
-                
+
             elif(method=="DIRECT"):
                 print("payment direct")
         except:
@@ -133,6 +210,7 @@ class ScreenOperate(MDBoxLayout):
         super(ScreenOperate, self).__init__(**kwargs)
 
     def move_up(self):
+        cek()
         print("move up")
         toast("moving tumbler base up")
 
@@ -172,9 +250,11 @@ class ScreenMaintenance(MDBoxLayout):
         global valve
 
         if (valve):
-            valve = False
+            valve = False 
+            valveAct(False)
         else:
-            valve = True
+            valve = True 
+            valveAct(True)
 
     def act_pump_1(self):
         global pump_1
