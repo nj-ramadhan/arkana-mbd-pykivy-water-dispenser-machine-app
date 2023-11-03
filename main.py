@@ -115,7 +115,9 @@ class ScreenChoosePayment(MDBoxLayout):
 
             elif(method=="OVO"):
                 print("payment ovo")
+                self.screen_manager.current = 'screen_operate'
                 toast("successfully pay with OVO")
+                
             elif(method=="DIRECT"):
                 print("payment direct")
         except:
