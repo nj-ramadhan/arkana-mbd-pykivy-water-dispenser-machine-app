@@ -1,6 +1,6 @@
 #:kivy 2.1.0
 
-<ScreenInfo>:
+<ScreenMaintenance>:
     MDBoxLayout:
         orientation: "vertical"
 		# header layout
@@ -37,7 +37,7 @@
 			spacing:10
 
 			MDLabel:
-				text: "INFORMATION"
+				text: "MAINTENANCE SCREEN"
 				halign: 'center'
 				valign: 'middle'    
 				bold: True
@@ -46,27 +46,46 @@
 				size_hint_y: 0.1
 
 		MDBoxLayout:
+			id: layout_maintenance
 			orientation: "vertical"
 			md_bg_color: app.theme_cls.accent_color
-			size_hint: 2, 0.75
+			size_hint_y: 0.75
 			padding:10
 			spacing:10
 
-			MDLabel:
-				id: text_info
-				text:"Water Refill Station KickYourPlast akan membantu memenuhi kebutuhan air minum kamu tanpa harus nyampah.\nCara penggunaan :\n1. Download Aplikasi KickYourPlast di App Store atau Google Play\n2. Klik Daftar Akun\n3. Isi data secara lengkap\n4. Pilih volume dan jenis air minum pada pilhan menu\n5. Lakukan Pembayaran melalui Gopay, ShoppeePay atau QRIS\n6. Jika sudah, kamu akan mendapatkan QR Code\n7. Scan QR Code pada Water Refill Station terdekat\n8. Atur ketinggian area pengisian tumbler\n9. Simpan tumbler pada area pengisian dan tekan tombol mulai pada touchscreen\n10. Tunggu sampai pengisian selesai"
-				font_size: 20
-				size_hint_y: 2
-				color: 0, 0, 0
-
-
 	MDRelativeLayout:
 		MDFillRoundFlatIconButton:
-			id: bt_screen_choose_product
-			icon: "water"
-			text: "PRODUCT"
+			id: bt_move_up
+			icon: "arrow-up"
+			text: " "
 			font_size: 28
 			size_hint: 0.25, 0.15
-			pos_hint: {"center_x": .75, "center_y": .15}
-			on_press: root.screen_choose_product()
-				
+			pos_hint: {"center_x": -0.5, "center_y": .45}
+			on_press: root.move_up()
+
+		MDFillRoundFlatIconButton:
+			id: bt_move_down
+			icon: "arrow-down"
+			text: " "
+			font_size: 28
+			size_hint: 0.25, 0.15
+			pos_hint: {"center_x": -0.5, "center_y": .15}
+			on_press: root.move_down()
+
+		MDFillRoundFlatIconButton:
+			id: bt_fill_start
+			icon: "play"
+			text: "START"
+			font_size: 28
+			size_hint: 0.25, 0.15
+			pos_hint: {"center_x": .5, "center_y": .45}
+			on_press: root.fill_start()
+
+		MDFillRoundFlatIconButton:
+			id: bt_fill_stop
+			icon: "stop"
+			text: "STOP"
+			font_size: 28
+			size_hint: 0.25, 0.15
+			pos_hint: {"center_x": .5, "center_y": .15}
+			on_press: root.fill_stop()

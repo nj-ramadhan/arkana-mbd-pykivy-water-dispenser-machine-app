@@ -1,5 +1,4 @@
 #:kivy 2.1.0
-
 <ScreenChooseProduct>:
     MDBoxLayout:
         orientation: "vertical"
@@ -17,7 +16,7 @@
 				halign: 'center'
 				valign: 'middle'
 				bold: True
-				font_size: 72
+				font_size: 32
 				color: 0, 0, 0
                     
             Image:
@@ -41,35 +40,31 @@
 				halign: 'center'
 				valign: 'middle'    
 				bold: True
-				font_size: 48
+				font_size: 24
 				color: 1, 1, 1
 				size_hint_y: 0.1
 
 		MDGridLayout:
+			id: layout_products
 			cols:3
 			md_bg_color: app.theme_cls.accent_color
 			row_force_default: True
-			row_default_height: 300
+			row_default_height: 200
 			size_hint: 2, 0.75
-			padding:40
-			spacing:50
+			padding:20
+			spacing:20
 
 			MDCard:
 				id: product_220ml
-				orientation: "vertical"
-				size_hint: None, None
-				size: "420dp", "250dp"
-				pos_hint: {"center_x": .5, "center_y": .5}
 				ripple_behavior: True
 				on_press: root.choose_payment(220)
 
-				Image:
-					source:'asset/220ml.png'
-					size_hint_x: 3
-					pos_hint: {"center_x": .5, "center_y": .5}
-					allow_stretch: True 
-
 				MDRelativeLayout:
+					Image:
+						source:'asset/220ml.png'
+						pos_hint: {"center_x": .5, "center_y": .5}
+						allow_stretch: True 
+
 					MDLabel:
 						text: "220ml"
 						adaptive_size: True
@@ -78,20 +73,15 @@
 
 			MDCard:
 				id: product_330ml
-				orientation: "vertical"
-				size_hint: None, None
-				size: "420dp", "250dp"
-				pos_hint: {"center_x": .5, "center_y": .5}
 				ripple_behavior: True
 				on_press: root.choose_payment(330)
 
-				Image:
-					source:'asset/330ml.png'
-					size_hint_x: 3
-					pos_hint: {"center_x": .5, "center_y": .5}
-					allow_stretch: True 
-
 				MDRelativeLayout:
+					Image:
+						source:'asset/330ml.png'
+						pos_hint: {"center_x": .5, "center_y": .5}
+						allow_stretch: True 
+
 					MDLabel:
 						text: "330ml"
 						adaptive_size: True
@@ -100,20 +90,15 @@
 
 			MDCard:
 				id: product_600ml
-				orientation: "vertical"
-				size_hint: None, None
-				size: "420dp", "250dp"
-				pos_hint: {"center_x": .5, "center_y": .5}
 				ripple_behavior: True
 				on_press: root.choose_payment(600)
 
-				Image:
-					source:'asset/600ml.png'
-					size_hint_x: 3
-					pos_hint: {"center_x": .5, "center_y": .5}
-					allow_stretch: True 
-
 				MDRelativeLayout:
+					Image:
+						source:'asset/600ml.png'
+						pos_hint: {"center_x": .5, "center_y": .5}
+						allow_stretch: True 
+
 					MDLabel:
 						text: "600ml"
 						adaptive_size: True
@@ -122,20 +107,15 @@
 
 			MDCard:
 				id: product_1000ml
-				orientation: "vertical"
-				size_hint: None, None
-				size: "420dp", "250dp"
-				pos_hint: {"center_x": .5, "center_y": .5}
 				ripple_behavior: True
 				on_press: root.choose_payment(1000)
 
-				Image:
-					source:'asset/1000ml.png'
-					size_hint_x: 3
-					pos_hint: {"center_x": .5, "center_y": .5}
-					allow_stretch: True 
-
 				MDRelativeLayout:
+					Image:
+						source:'asset/1000ml.png'
+						pos_hint: {"center_x": .5, "center_y": .5}
+						allow_stretch: True 
+
 					MDLabel:
 						text: "1000ml"
 						adaptive_size: True
@@ -149,6 +129,6 @@
 			text: "INFO"
 			font_size: 28
 			size_hint: 0.25, 0.15
-			pos_hint: {"center_x": .85, "center_y": .15}
+			pos_hint: {"center_x": .75, "center_y": .15}
 			on_press: root.screen_info()
 				

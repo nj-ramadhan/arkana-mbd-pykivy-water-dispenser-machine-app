@@ -17,7 +17,7 @@
 				halign: 'center'
 				valign: 'middle'
 				bold: True
-				font_size: 72
+				font_size: 32
 				color: 0, 0, 0
                     
             Image:
@@ -41,92 +41,70 @@
 				halign: 'center'
 				valign: 'middle'    
 				bold: True
-				font_size: 48
+				font_size: 24
 				color: 1, 1, 1
 				size_hint_y: 0.1
 				
-		MDBoxLayout:
-			id: layout_choose_payment
-			orientation: "vertical"
+		MDGridLayout:
+			id: layout_products
+			cols:3
 			md_bg_color: app.theme_cls.accent_color
+			row_force_default: True
+			row_default_height: 200
 			size_hint: 2, 0.75
 			padding:20
 			spacing:20
 
-			MDBoxLayout:
-				orientation: "vertical"
-				GridLayout:
-					cols:3
-					row_force_default: True
-					row_default_height: 300
-					padding:40
-					spacing:50
+			MDCard:
+				id: payment_gopay
+				ripple_behavior: True
+				on_press: root.pay("GOPAY")
 
-					MDCard:
-						id: payment_gopay
-						orientation: "vertical"
-						size_hint: None, None
-						size: "250dp", "200dp"
-						ripple_behavior: True
-						on_press: root.pay("GOPAY")
+				MDRelativeLayout:
+					Image:
+						source:'asset/Logo_Gopay.png'
+						pos_hint: {"center_x": .5, "center_y": .5}
+						allow_stretch: True 
 
-						Image:
-							source:'asset/Logo_Gopay.png'
-							size_hint_x: 1.2
-							pos_hint: {"center_x": .5, "center_y": .5}
-							allow_stretch: True 
+					MDLabel:
+						text: "GOPAY"
+						adaptive_size: True
+						pos: "12dp", "12dp"
+						bold: True
 
-						MDRelativeLayout:
-							MDLabel:
-								text: "GOPAY"
-								adaptive_size: True
-								color: "grey"
-								pos: "12dp", "12dp"
-								bold: True
+			MDCard:
+				id: payment_ovo
+				ripple_behavior: True
+				on_press: root.pay("OVO")
 
-					MDCard:
-						id: payment_ovo
-						orientation: "vertical"
-						size_hint: None, None
-						size: "250dp", "200dp"
-						ripple_behavior: True
-						on_press: root.pay("OVO")
+				MDRelativeLayout:
+					Image:
+						source:'asset/Logo_Ovo.png'
+						pos_hint: {"center_x": .5, "center_y": .5}
+						allow_stretch: True 
 
-						Image:
-							source:'asset/Logo_Ovo.png'
-							size_hint_x: 1.2
-							pos_hint: {"center_x": .5, "center_y": .5}
-							allow_stretch: True 
+					MDLabel:
+						text: "OVO"
+						adaptive_size: True
+						pos: "12dp", "12dp"
+						bold: True
 
-						MDRelativeLayout:
-							MDLabel:
-								text: "OVO"
-								adaptive_size: True
-								color: "grey"
-								pos: "12dp", "12dp"
-								bold: True
+			MDCard:
+				id: payment_direct
+				ripple_behavior: True
+				on_press: root.pay("DIRECT")
 
-					MDCard:
-						id: payment_direct
-						orientation: "vertical"
-						size_hint: None, None
-						size: "250dp", "200dp"
-						ripple_behavior: True
-						on_press: root.pay("DIRECT")
+				MDRelativeLayout:
+					Image:
+						source:'asset/Logo_Direct.png'
+						pos_hint: {"center_x": .5, "center_y": .5}
+						allow_stretch: True 
 
-						Image:
-							source:'asset/Logo_Direct.png'
-							size_hint_x: 1.2
-							pos_hint: {"center_x": .5, "center_y": .5}
-							allow_stretch: True 
-
-						MDRelativeLayout:
-							MDLabel:
-								text: "DIRECT TRANSFER"
-								adaptive_size: True
-								color: "grey"
-								pos: "12dp", "12dp"
-								bold: True
+					MDLabel:
+						text: "DIRECT TRANSFER"
+						adaptive_size: True
+						pos: "12dp", "12dp"
+						bold: True
 
 	MDRelativeLayout:
 		MDFillRoundFlatIconButton:
@@ -135,6 +113,6 @@
 			text: "CANCEL"
 			font_size: 28
 			size_hint: 0.25, 0.15
-			pos_hint: {"center_x": .85, "center_y": .15}
+			pos_hint: {"center_x": .75, "center_y": .15}
 			on_press: root.screen_choose_product()
 				

@@ -7,8 +7,8 @@ from kivymd.toast import toast
 from kivymd.uix.datatables import MDDataTable
 from kivy.lang import Builder
 from kivy.core.window import Window
-from kivy.uix.boxlayout import BoxLayout
-from kivymd.uix.filemanager import MDFileManager
+from kivymd.uix.boxlayout import MDBoxLayout
+from kivymd.uix.card import MDCard
 from kivy.clock import Clock
 from kivy.config import Config
 from kivy.metrics import dp
@@ -50,7 +50,7 @@ colors = {
 
 DEBUG = True
 
-class ScreenSplash(BoxLayout):
+class ScreenSplash(MDBoxLayout):
     screen_manager = ObjectProperty(None)
     screen_choose_product = ObjectProperty(None)
     app_window = ObjectProperty(None)
@@ -74,7 +74,10 @@ class ScreenSplash(BoxLayout):
             self.screen_manager.current = 'screen_choose_product'
             return False
 
-class ScreenChooseProduct(BoxLayout):
+class CardProducts(MDCard):
+    text = StringProperty()
+
+class ScreenChooseProduct(MDBoxLayout):
     screen_manager = ObjectProperty(None)
     screen_choose_payment = ObjectProperty(None)
 
@@ -88,7 +91,7 @@ class ScreenChooseProduct(BoxLayout):
     def screen_info(self):
         self.screen_manager.current = 'screen_info'
         
-class ScreenChoosePayment(BoxLayout):
+class ScreenChoosePayment(MDBoxLayout):
     screen_manager = ObjectProperty(None)
 
     def __init__(self, **kwargs):
@@ -114,7 +117,7 @@ class ScreenChoosePayment(BoxLayout):
     def screen_choose_product(self):
         self.screen_manager.current = 'screen_choose_product'
 
-class ScreenOperate(BoxLayout):
+class ScreenOperate(MDBoxLayout):
     screen_manager = ObjectProperty(None)
 
     def __init__(self, **kwargs):       
@@ -137,16 +140,11 @@ class ScreenOperate(BoxLayout):
         toast("thank you for decreasing plastic bottle trash by buying our product")
         self.screen_manager.current = 'screen_choose_product'
 
-class ScreenInfo(BoxLayout):
+class ScreenInfo(MDBoxLayout):
     screen_manager = ObjectProperty(None)
 
     def __init__(self, **kwargs):
         super(ScreenInfo, self).__init__(**kwargs)
-        file_info = open("info.txt", "r")
-        text_info = file_info.read()
-        new_text_info = text_info.replace("\n", ".")
-        print(new_text_info)
-        # self.ids.text_info.text = "new_text_info"
 
     def screen_choose_product(self):
         self.screen_manager.current = 'screen_choose_product'
@@ -163,7 +161,7 @@ class WaterDispenserMachineApp(MDApp):
         self.icon = 'asset/Icon_Logo.png'
         # Window.fullscreen = 'auto'
         # Window.borderless = True
-        Window.size = 1366, 768
+        Window.size = 800, 600
         # Window.allow_screensaver = True
 
         screen = Builder.load_file('main.kv')
