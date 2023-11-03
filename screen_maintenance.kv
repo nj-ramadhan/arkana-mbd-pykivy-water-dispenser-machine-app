@@ -55,37 +55,73 @@
 
 	MDRelativeLayout:
 		MDFillRoundFlatIconButton:
-			id: bt_move_up
+			id: bt_valve
+			icon: "valve"
+			text: "VALVE"
+			font_size: 14
+			size_hint: 0.18, 0.08
+			pos_hint: {"center_x": 0.65, "center_y": .65}
+			on_press: root.act_valve()
+
+		MDFillRoundFlatIconButton:
+			id: bt_pump_1
+			icon: "pump"
+			text: "PUMP 1"
+			font_size: 14
+			size_hint: 0.18, 0.08
+			pos_hint: {"center_x": 0.65, "center_y": .55}
+			on_press: root.act_pump_1()
+
+		MDFillRoundFlatIconButton:
+			id: bt_pump_2
+			icon: "pump"
+			text: "PUMP 2"
+			font_size: 14
+			size_hint: 0.18, 0.08
+			pos_hint: {"center_x": 0.65, "center_y": .45}
+			on_press: root.act_pump_2()
+
+		MDFillRoundFlatIconButton:
+			id: bt_open
+			icon: "water"
+			text: "OPEN"
+			font_size: 14
+			size_hint: 0.18, 0.08
+			pos_hint: {"center_x": 0.25, "center_y": .65}
+			on_press: root.act_open()
+
+		MDFillRoundFlatIconButton:
+			id: bt_close
+			icon: "close"
+			text: "CLOSE"
+			font_size: 14
+			size_hint: 0.18, 0.08
+			pos_hint: {"center_x": 0.25, "center_y": .55}
+			on_press: root.act_close()
+
+		MDFillRoundFlatIconButton:
+			id: bt_up
 			icon: "arrow-up"
-			text: " "
-			font_size: 28
-			size_hint: 0.25, 0.15
-			pos_hint: {"center_x": -0.5, "center_y": .45}
-			on_press: root.move_up()
+			text: "UP"
+			font_size: 14
+			size_hint: 0.18, 0.08
+			pos_hint: {"center_x": 0.25, "center_y": .45}
+			on_press: root.act_up()
 
 		MDFillRoundFlatIconButton:
-			id: bt_move_down
+			id: bt_down
 			icon: "arrow-down"
-			text: " "
-			font_size: 28
-			size_hint: 0.25, 0.15
-			pos_hint: {"center_x": -0.5, "center_y": .15}
-			on_press: root.move_down()
+			text: "DOWN"
+			font_size: 14
+			size_hint: 0.18, 0.08
+			pos_hint: {"center_x": 0.25, "center_y": .35}
+			on_press: root.act_down()
 
 		MDFillRoundFlatIconButton:
-			id: bt_fill_start
-			icon: "play"
-			text: "START"
+			id: bt_exit
+			icon: "logout"
+			text: "EXIT"
 			font_size: 28
 			size_hint: 0.25, 0.15
-			pos_hint: {"center_x": .5, "center_y": .45}
-			on_press: root.fill_start()
-
-		MDFillRoundFlatIconButton:
-			id: bt_fill_stop
-			icon: "stop"
-			text: "STOP"
-			font_size: 28
-			size_hint: 0.25, 0.15
-			pos_hint: {"center_x": .5, "center_y": .15}
-			on_press: root.fill_stop()
+			pos_hint: {"center_x": .75, "center_y": .15}
+			on_press: root.exit()

@@ -6,6 +6,7 @@
 #:include screen_choose_payment.kv
 #:include screen_info.kv
 #:include screen_operate.kv
+#:include screen_maintenance.kv
 
 ScreenManager:
     id: screen_manager
@@ -44,6 +45,6 @@ ScreenManager:
 
     Screen:
         name: 'screen_maintenance'
-        ScreenInfo:
+        ScreenMaintenance:
             id: screen_maintenance
             screen_manager: screen_manager                  

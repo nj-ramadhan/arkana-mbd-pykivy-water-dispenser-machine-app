@@ -50,14 +50,20 @@ colors = {
 
 DEBUG = True
 
+valve = False
+pump_1 = False
+pump_2 = False
+linear_motor = False
+stepper_open_close = False
+
 class ScreenSplash(MDBoxLayout):
     screen_manager = ObjectProperty(None)
-    screen_choose_product = ObjectProperty(None)
     app_window = ObjectProperty(None)
     
     def __init__(self, **kwargs):
         super(ScreenSplash, self).__init__(**kwargs)
         Clock.schedule_interval(self.update_progress_bar, .01)
+        Clock.schedule_interval(self.regular_check, .1)
 
     def update_progress_bar(self, *args):
         if (self.ids.progress_bar.value + 1) < 100:
@@ -74,12 +80,13 @@ class ScreenSplash(MDBoxLayout):
             self.screen_manager.current = 'screen_choose_product'
             return False
 
-class CardProducts(MDCard):
-    text = StringProperty()
+    def regular_check(self, *args):
+        # program for reading sensor end control system algorithm
+        pass
+
 
 class ScreenChooseProduct(MDBoxLayout):
     screen_manager = ObjectProperty(None)
-    screen_choose_payment = ObjectProperty(None)
 
     def __init__(self, **kwargs):
         super(ScreenChooseProduct, self).__init__(**kwargs)
@@ -148,7 +155,98 @@ class ScreenInfo(MDBoxLayout):
 
     def screen_choose_product(self):
         self.screen_manager.current = 'screen_choose_product'
-        
+
+    def screen_maintenance(self):
+        self.screen_manager.current = 'screen_maintenance'      
+
+class ScreenMaintenance(MDBoxLayout):
+    screen_manager = ObjectProperty(None)
+
+    def __init__(self, **kwargs):
+        super(ScreenMaintenance, self).__init__(**kwargs)
+        Clock.schedule_interval(self.regular_check, .1)
+
+    def act_valve(self):
+        global valve
+
+        if (valve):
+            valve = False
+        else:
+            valve = True
+
+    def act_pump_1(self):
+        global pump_1
+
+        if (pump_1):
+            pump_1 = False
+        else:
+            pump_1 = True
+
+    def act_pump_2(self):
+        global pump_2
+
+        if (pump_2):
+            pump_2 = False
+        else:
+            pump_2 = True
+
+    def act_open(self):
+        global stepper_open_close
+
+        # stepper_open_close is boolean, if stepper_open_close on it can change GPIO condition to move open or close
+        if (stepper_open_close):
+            stepper_open_close = False
+        else:
+            stepper_open_close = True
+
+    def act_close(self):
+        global stepper_open_close
+
+        # stepper_open_close is boolean, if stepper_open_close on it can change GPIO condition to move open or close
+        if (stepper_open_close):
+            stepper_open_close = False
+        else:
+            stepper_open_close = True
+
+    def act_up(self):
+        global linear_motor
+
+        # linear_motor is boolean, if linear motor on it can change GPIO condition to move up or down
+        if (linear_motor):
+            pass
+
+    def act_down(self):
+        global linear_motor
+
+        if (linear_motor):
+            pass
+
+    def exit(self):
+        self.screen_manager.current = 'screen_choose_product'
+
+    def regular_check(self, *args):
+        # program for displaying IO condition
+        if (valve):
+            self.ids.bt_valve.md_bg_color = "#3C9999"
+        else:
+            self.ids.bt_valve.md_bg_color = "#09343C"
+
+        if (pump_1):
+            self.ids.bt_pump_1.md_bg_color = "#3C9999"
+        else:
+            self.ids.bt_pump_1.md_bg_color = "#09343C"
+
+        if (pump_2):
+            self.ids.bt_pump_2.md_bg_color = "#3C9999"
+        else:
+            self.ids.bt_pump_2.md_bg_color = "#09343C"
+
+        if (stepper_open_close):
+            self.ids.bt_open.md_bg_color = "#3C9999"
+            self.ids.bt_close.md_bg_color = "#3C9999"
+        else:
+            self.ids.bt_open.md_bg_color = "#09343C"
+            self.ids.bt_close.md_bg_color = "#09343C"
 
 class WaterDispenserMachineApp(MDApp):
     def __init__(self, **kwargs):
