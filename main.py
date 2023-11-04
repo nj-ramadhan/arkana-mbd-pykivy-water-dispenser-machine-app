@@ -56,6 +56,85 @@ pump_2 = False
 linear_motor = False
 stepper_open_close = False
 
+# if(not DEBUG):
+from gpiozero import Button
+from gpiozero import RotaryEncoder
+from gpiozero import DigitalInputDevice
+from gpiozero import Motor
+from gpiozero import DigitalOutputDevice
+
+proximity = Button(17)
+waterFlow = RotaryEncoder(21,20)
+isOpened = Button(27)
+isClosed = Button(22)
+
+valveIO = DigitalOutputDevice(16)
+pump1 = DigitalOutputDevice(5)
+pump2 = DigitalOutputDevice(6)
+stepperEn = DigitalOutputDevice(23)
+stepperDir = DigitalOutputDevice(24)
+stepperPul = DigitalOutputDevice(12)
+linearMotor = Motor(25,26)
+
+cold = False
+
+def valveAct(exec : bool):
+    global valveIO
+    if (exec):
+        valveIO.on()
+        print('valve on')
+    else :
+        valveIO.off()
+        print('valve off')
+
+def pump1Act(exec : bool):
+    global pump1
+    if (exec):
+        pump1.on()
+        print('pump 1 on')
+    else :
+        pump1.off()
+        print('pump 1 off')
+
+def pump2Act(exec : bool):
+    global pump2
+    if (exec):
+        pump2.on()
+        print('pump 2 on')
+    else :
+        pump2.off()
+        print('pump 2 off')
+
+def stepperAct(exec : str):
+    global stepperEn, stepperDir ,stepperPul, isOpened, isClosed
+    
+    stepperEn.on()
+    
+    if (exec == 'open'):
+        stepperDir.on()
+        while not isOpened.value:
+            stepperPul.value = 0.5
+        
+        stepperPul.value = 0
+    else:
+        stepperDir.off()
+        while not isClosed.value:
+            stepperPul.value = 0.5
+        
+        stepperPul.value = 0
+
+def linearMotorAct(exec : str):
+    global linearMotor
+    
+    if (exec == 'up'):
+        linearMotor.forward()
+    else:
+        linearMotor.backward()
+    
+    linearMotor.stop()
+
+    
+
 class ScreenSplash(MDBoxLayout):
     screen_manager = ObjectProperty(None)
     app_window = ObjectProperty(None)
@@ -115,7 +194,9 @@ class ScreenChoosePayment(MDBoxLayout):
 
             elif(method=="OVO"):
                 print("payment ovo")
+                self.screen_manager.current = 'screen_operate'
                 toast("successfully pay with OVO")
+
             elif(method=="DIRECT"):
                 print("payment direct")
         except:
@@ -125,27 +206,54 @@ class ScreenChoosePayment(MDBoxLayout):
         self.screen_manager.current = 'screen_choose_product'
 
 class ScreenOperate(MDBoxLayout):
-    screen_manager = ObjectProperty(None)
+    screen_manager = ObjectProperty(None)\
 
     def __init__(self, **kwargs):       
         super(ScreenOperate, self).__init__(**kwargs)
+        Clock.schedule_interval(self.regular_check, .1)
 
     def move_up(self):
+        linearMotorAct('up')
         print("move up")
         toast("moving tumbler base up")
 
     def move_down(self):
+        linearMotorAct('down')
         print("move down")
         toast("moving tumbler base down")
 
+    def cold_mode(self, value):
+        global cold
+
+        cold = value
+
     def fill_start(self):
+        if (self.cold):
+            pump2Act(1)
+        else:
+            pump1Act(1)
+
+        print(cold)
         print("fill start")
         toast("water filling is started")
 
     def fill_stop(self):
+        pump1Act(0)
+        pump2Act(0)
+
         print("fill stop")
         toast("thank you for decreasing plastic bottle trash by buying our product")
         self.screen_manager.current = 'screen_choose_product'
+
+    def regular_check(self, *args):
+        # program for displaying IO condition
+        global cold 
+        if (cold):
+            self.ids.bt_cold.md_bg_color = "#3C9999"
+            self.ids.bt_normal.md_bg_color = "#09343C"
+        else:
+            self.ids.bt_cold.md_bg_color = "#09343C"
+            self.ids.bt_normal.md_bg_color = "#3C9999"
 
 class ScreenInfo(MDBoxLayout):
     screen_manager = ObjectProperty(None)
@@ -170,62 +278,85 @@ class ScreenMaintenance(MDBoxLayout):
         global valve
 
         if (valve):
-            valve = False
+            valve = False 
+            valveAct(False)
         else:
-            valve = True
+            valve = True 
+            valveAct(True)
 
     def act_pump_1(self):
         global pump_1
 
         if (pump_1):
+            pump1Act(True)
             pump_1 = False
         else:
+            pump1Act(False)
             pump_1 = True
 
     def act_pump_2(self):
         global pump_2
 
         if (pump_2):
+            pump2Act(True)
             pump_2 = False
         else:
+            pump2Act(False)
             pump_2 = True
 
     def act_open(self):
-        global stepper_open_close
+        global stepper_open_close, isOpened
 
         # stepper_open_close is boolean, if stepper_open_close on it can change GPIO condition to move open or close
-        if (stepper_open_close):
+        # if (stepper_open_close):
+        #     stepperAct('open')
+        #     stepper_open_close = False
+        # else:
+        #     stepperAct('close')
+        #     stepper_open_close = True
+        # if not lsOpen
+        if (not isOpened) :
+            stepperAct('open')
             stepper_open_close = False
-        else:
-            stepper_open_close = True
+
 
     def act_close(self):
-        global stepper_open_close
+        global stepper_open_close, isClosed
 
         # stepper_open_close is boolean, if stepper_open_close on it can change GPIO condition to move open or close
-        if (stepper_open_close):
-            stepper_open_close = False
-        else:
+        # if (stepper_open_close):
+        #     stepperAct('open')
+        #     stepper_open_close = False
+        # else:
+        #     stepperAct('close')
+        #     stepper_open_close = True
+
+        if (not isClosed) :
+            stepperAct('close')
             stepper_open_close = True
 
     def act_up(self):
         global linear_motor
 
+        linearMotorAct('up')
+
         # linear_motor is boolean, if linear motor on it can change GPIO condition to move up or down
-        if (linear_motor):
-            pass
+        # if (linear_motor):
+        #     pass
 
     def act_down(self):
         global linear_motor
 
-        if (linear_motor):
-            pass
+        linearMotorAct('down')
+
+        # if (linear_motor):
+        #     pass
 
     def exit(self):
         self.screen_manager.current = 'screen_choose_product'
 
     def regular_check(self, *args):
-        # program for displaying IO condition
+        # program for displaying IO condition        
         if (valve):
             self.ids.bt_valve.md_bg_color = "#3C9999"
         else:
