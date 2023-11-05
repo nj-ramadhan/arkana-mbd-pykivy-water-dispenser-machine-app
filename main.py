@@ -221,10 +221,10 @@ class ScreenChoosePayment(MDBoxLayout):
         try:
             if(method=="GOPAY"):
                 time.sleep(0.1)
-                qr.add_data("insert data here")
+                qr.add_data("insert data here, it is gopay now")
                 qr.make(fit=True)
 
-                img = qr.make_image(back_color=(255, 195, 235), fill_color=(55, 95, 35))
+                img = qr.make_image(back_color=(200, 200, 200), fill_color=(55, 95, 100))
                 img.save("qr_payment.png")
 
                 self.screen_manager.current = 'screen_qr_payment'
@@ -232,12 +232,28 @@ class ScreenChoosePayment(MDBoxLayout):
                 toast("successfully pay with GOPAY")
 
             elif(method=="OVO"):
+                time.sleep(0.1)
+                qr.add_data("insert data here, it is ovo now")
+                qr.make(fit=True)
+
+                img = qr.make_image(back_color=(200, 200, 200), fill_color=(55, 95, 100))
+                img.save("qr_payment.png")
+
+                self.screen_manager.current = 'screen_qr_payment'
                 print("payment ovo")
-                self.screen_manager.current = 'screen_operate'
                 toast("successfully pay with OVO")
 
-            elif(method=="DIRECT"):
-                print("payment direct")
+            elif(method=="QRIS"):
+                time.sleep(0.1)
+                qr.add_data("insert data here, it is QRIS now")
+                qr.make(fit=True)
+
+                img = qr.make_image(back_color=(200, 200, 200), fill_color=(55, 95, 100))
+                img.save("qr_payment.png")
+
+                self.screen_manager.current = 'screen_qr_payment'
+                print("payment qris")
+                toast("successfully pay with QRIS")
         except:
             print("payment error")
 
@@ -302,11 +318,11 @@ class ScreenQRPayment(MDBoxLayout):
     def __init__(self, **kwargs):
         super(ScreenQRPayment, self).__init__(**kwargs)
         Clock.schedule_interval(self.regular_check, 1)
-        # self.ids.layout_qr_payment.add_widget()
-
+        
     def regular_check(self, *args):
-        # self.ids.layout_qr_payment.add_widget()
-        pass
+        self.ids.image_qr_payment.source = 'qr_payment.png'
+        self.ids.image_qr_payment.reload()
+        # pass
 
     def cancel(self):
         self.screen_manager.current = 'screen_choose_product'
