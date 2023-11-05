@@ -133,7 +133,7 @@ if (not DEBUG):
     normalTank.serial.stopbits = STOPBITS
     normalTank.serial.timeout = 0.5
     normalTank.mode = MODE
-    NormalTank.clear_buffers_before_each_transaction = True
+    normalTank.clear_buffers_before_each_transaction = True
 
 # waterFlow.when_activated(lambda : measure)
 
@@ -184,22 +184,22 @@ def pumpDinginAct(exec : bool):
     global pumpDingin
     if (exec):
         if(not DEBUG):
-            pump1.on()
+            pumpDingin.on()
         print('pump 1 on')
     else :
         if(not DEBUG):
-            pump1.off()
+            pumpDingin.off()
         print('pump 1 off')
 
 def pumpNormalAct(exec : bool):
     global pumpNormal
     if (exec):
         if(not DEBUG):
-            pump2.on()
+            pumpNormal.on()
         print('pump 2 on')
     else :
         if(not DEBUG):
-            pump2.off()
+            pumpNormal.off()
         print('pump 2 off')
 
 def stepperAct(exec : str):
