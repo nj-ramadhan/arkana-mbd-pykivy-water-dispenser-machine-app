@@ -224,31 +224,31 @@ class ScreenChoosePayment(MDBoxLayout):
                 qr.add_data("insert data here, it is gopay now")
                 qr.make(fit=True)
 
-                img = qr.make_image(back_color=(200, 200, 200), fill_color=(55, 95, 100))
+                img = qr.make_image(back_color=(255, 255, 255), fill_color=(55, 95, 100))
                 img.save("qr_payment.png")
 
                 self.screen_manager.current = 'screen_qr_payment'
                 print("payment gopay")
                 toast("successfully pay with GOPAY")
 
-            elif(method=="OVO"):
+            elif(method=="ShopeePay"):
                 time.sleep(0.1)
-                qr.add_data("insert data here, it is ovo now")
+                qr.add_data("insert data here, it is ShopeePay now")
                 qr.make(fit=True)
 
-                img = qr.make_image(back_color=(200, 200, 200), fill_color=(55, 95, 100))
+                img = qr.make_image(back_color=(255, 255, 255), fill_color=(55, 95, 100))
                 img.save("qr_payment.png")
 
                 self.screen_manager.current = 'screen_qr_payment'
                 print("payment ovo")
-                toast("successfully pay with OVO")
+                toast("successfully pay with ShopeePay")
 
             elif(method=="QRIS"):
                 time.sleep(0.1)
                 qr.add_data("insert data here, it is QRIS now")
                 qr.make(fit=True)
 
-                img = qr.make_image(back_color=(200, 200, 200), fill_color=(55, 95, 100))
+                img = qr.make_image(back_color=(255, 255, 255), fill_color=(55, 95, 100))
                 img.save("qr_payment.png")
 
                 self.screen_manager.current = 'screen_qr_payment'

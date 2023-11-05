@@ -75,16 +75,16 @@
 			MDCard:
 				id: payment_ovo
 				ripple_behavior: True
-				on_press: root.pay("OVO")
+				on_press: root.pay("ShopeePay")
 
 				MDRelativeLayout:
 					Image:
-						source:'asset/Logo_Ovo.png'
+						source:'asset/Logo_ShopeePay.png'
 						pos_hint: {"center_x": .5, "center_y": .5}
 						allow_stretch: True 
 
 					MDLabel:
-						text: "OVO"
+						text: "ShopeePay"
 						adaptive_size: True
 						pos: "12dp", "12dp"
 						bold: True
@@ -92,16 +92,16 @@
 			MDCard:
 				id: payment_direct
 				ripple_behavior: True
-				on_press: root.pay("DIRECT")
+				on_press: root.pay("QRIS")
 
 				MDRelativeLayout:
 					Image:
-						source:'asset/Logo_Direct.png'
+						source:'asset/Logo_QRIS.png'
 						pos_hint: {"center_x": .5, "center_y": .5}
 						allow_stretch: True 
 
 					MDLabel:
-						text: "DIRECT TRANSFER"
+						text: "QRIS"
 						adaptive_size: True
 						pos: "12dp", "12dp"
 						bold: True
@@ -113,6 +113,6 @@
 			text: "CANCEL"
 			font_size: 28
 			size_hint: 0.25, 0.15
-			pos_hint: {"center_x": .75, "center_y": .15}
+			pos_hint: {"center_x": .8, "center_y": .1}
 			on_press: root.screen_choose_product()
 				
