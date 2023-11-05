@@ -49,19 +49,33 @@
 			id: layout_maintenance
 			orientation: "vertical"
 			md_bg_color: app.theme_cls.accent_color
-			size_hint_y: 0.75
+			size_hint: 2, 0.75
 			padding:10
 			spacing:10
 
+			Image:
+			    source:'asset/plant.png'
+                size_hint_x: 0.9
+                allow_stretch: True  
+
 	MDRelativeLayout:
 		MDFillRoundFlatIconButton:
-			id: bt_valve
+			id: bt_valve_1
 			icon: "valve"
-			text: "VALVE"
+			text: "VALVE 1"
 			font_size: 14
 			size_hint: 0.18, 0.08
-			pos_hint: {"center_x": 0.65, "center_y": .65}
-			on_press: root.act_valve()
+			pos_hint: {"center_x": 0.3, "center_y": .7}
+			on_press: root.act_valve_1()
+
+		MDFillRoundFlatIconButton:
+			id: bt_valve_2
+			icon: "valve"
+			text: "VALVE 2"
+			font_size: 14
+			size_hint: 0.18, 0.08
+			pos_hint: {"center_x": 0.7, "center_y": .7}
+			on_press: root.act_valve_2()
 
 		MDFillRoundFlatIconButton:
 			id: bt_pump_1
@@ -69,7 +83,7 @@
 			text: "PUMP 1"
 			font_size: 14
 			size_hint: 0.18, 0.08
-			pos_hint: {"center_x": 0.65, "center_y": .55}
+			pos_hint: {"center_x": 0.25, "center_y": .25}
 			on_press: root.act_pump_1()
 
 		MDFillRoundFlatIconButton:
@@ -78,7 +92,7 @@
 			text: "PUMP 2"
 			font_size: 14
 			size_hint: 0.18, 0.08
-			pos_hint: {"center_x": 0.65, "center_y": .45}
+			pos_hint: {"center_x": 0.8, "center_y": .25}
 			on_press: root.act_pump_2()
 
 		MDFillRoundFlatIconButton:
@@ -87,7 +101,7 @@
 			text: "OPEN"
 			font_size: 14
 			size_hint: 0.18, 0.08
-			pos_hint: {"center_x": 0.25, "center_y": .65}
+			pos_hint: {"center_x": 0.35, "center_y": .15}
 			on_press: root.act_open()
 
 		MDFillRoundFlatIconButton:
@@ -96,7 +110,7 @@
 			text: "CLOSE"
 			font_size: 14
 			size_hint: 0.18, 0.08
-			pos_hint: {"center_x": 0.25, "center_y": .55}
+			pos_hint: {"center_x": 0.35, "center_y": .06}
 			on_press: root.act_close()
 
 		MDFillRoundFlatIconButton:
@@ -105,7 +119,7 @@
 			text: "UP"
 			font_size: 14
 			size_hint: 0.18, 0.08
-			pos_hint: {"center_x": 0.25, "center_y": .45}
+			pos_hint: {"center_x": 0.15, "center_y": .15}
 			on_press: root.act_up()
 
 		MDFillRoundFlatIconButton:
@@ -114,7 +128,7 @@
 			text: "DOWN"
 			font_size: 14
 			size_hint: 0.18, 0.08
-			pos_hint: {"center_x": 0.25, "center_y": .35}
+			pos_hint: {"center_x": 0.15, "center_y": .06}
 			on_press: root.act_down()
 
 		MDFillRoundFlatIconButton:
@@ -123,5 +137,5 @@
 			text: "EXIT"
 			font_size: 28
 			size_hint: 0.25, 0.15
-			pos_hint: {"center_x": .75, "center_y": .15}
+			pos_hint: {"center_x": .85, "center_y": .1}
 			on_press: root.exit()
