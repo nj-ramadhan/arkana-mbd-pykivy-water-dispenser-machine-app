@@ -75,20 +75,20 @@ from gpiozero import DigitalInputDevice
 from gpiozero import Motor
 from gpiozero import DigitalOutputDevice
 
-# if(not DEBUG):
-# proximity = Button(17)
-# waterFlow = DigitalInputDevice(20)
-# isOpened = Button(27)
-# isClosed = Button(22)
+if(not DEBUG):
+    proximity = Button(17)
+    waterFlow = DigitalInputDevice(20)
+    isOpened = Button(27)
+    isClosed = Button(22)
 
-# valveDingin = DigitalOutputDevice(16)
-# valveNormal = DigitalOutputDevice(19)
-# pumpDingin = DigitalOutputDevice(5)
-# pumpNormal = DigitalOutputDevice(6)
-# stepperEn = DigitalOutputDevice(23)
-# stepperDir = DigitalOutputDevice(24)
-# stepperPul = DigitalOutputDevice(12)
-# linearMotor = Motor(25,26)
+    valveDingin = DigitalOutputDevice(16)
+    valveNormal = DigitalOutputDevice(19)
+    pumpDingin = DigitalOutputDevice(5)
+    pumpNormal = DigitalOutputDevice(6)
+    stepperEn = DigitalOutputDevice(23)
+    stepperDir = DigitalOutputDevice(24)
+    stepperPul = DigitalOutputDevice(12)
+    linearMotor = Motor(25,26)
 
 BAUDRATE = 19200
 BYTESIZES = 8
@@ -107,32 +107,33 @@ levelMainTank = 0
 levelNormalTank = 0
 levelColdTank = 0
 
-mainTank = minimalmodbus.Instrument('dev/ttyUSB0', 1)
-mainTank.serial.baudrate = BAUDRATE
-mainTank.serial.bytesize = BYTESIZES
-mainTank.serial.parity = PARITY
-mainTank.serial.stopbits = STOPBITS
-mainTank.serial.timeout = 0.5
-mainTank.mode = MODE
-mainTank.clear_buffers_before_each_transaction = True
+if (not DEBUG):
+    mainTank = minimalmodbus.Instrument('dev/ttyUSB0', 1)
+    mainTank.serial.baudrate = BAUDRATE
+    mainTank.serial.bytesize = BYTESIZES
+    mainTank.serial.parity = PARITY
+    mainTank.serial.stopbits = STOPBITS
+    mainTank.serial.timeout = 0.5
+    mainTank.mode = MODE
+    mainTank.clear_buffers_before_each_transaction = True
 
-coldTank = minimalmodbus.Instrument('dev/ttyUSB0', 2)
-coldTank.serial.baudrate = BAUDRATE
-coldTank.serial.bytesize = BYTESIZES
-coldTank.serial.parity = PARITY
-coldTank.serial.stopbits = STOPBITS
-coldTank.serial.timeout = 0.5
-coldTank.mode = MODE
-coldTank.clear_buffers_before_each_transaction = True
+    coldTank = minimalmodbus.Instrument('dev/ttyUSB0', 2)
+    coldTank.serial.baudrate = BAUDRATE
+    coldTank.serial.bytesize = BYTESIZES
+    coldTank.serial.parity = PARITY
+    coldTank.serial.stopbits = STOPBITS
+    coldTank.serial.timeout = 0.5
+    coldTank.mode = MODE
+    coldTank.clear_buffers_before_each_transaction = True
 
-normalTank = minimalmodbus.Instrument('dev/ttyUSB0', 3)
-normalTank.serial.baudrate = BAUDRATE
-normalTank.serial.bytesize = BYTESIZES
-normalTank.serial.parity = PARITY
-normalTank.serial.stopbits = STOPBITS
-normalTank.serial.timeout = 0.5
-normalTank.mode = MODE
-NormalTank.clear_buffers_before_each_transaction = True
+    normalTank = minimalmodbus.Instrument('dev/ttyUSB0', 3)
+    normalTank.serial.baudrate = BAUDRATE
+    normalTank.serial.bytesize = BYTESIZES
+    normalTank.serial.parity = PARITY
+    normalTank.serial.stopbits = STOPBITS
+    normalTank.serial.timeout = 0.5
+    normalTank.mode = MODE
+    NormalTank.clear_buffers_before_each_transaction = True
 
 # waterFlow.when_activated(lambda : measure)
 
@@ -156,27 +157,6 @@ def levelCheck(levelMainTank, levelColdTank, levelNormalTank):
         
     if(levelNormalTank <=20.0):
         pumpDinginAct(0)
-
-if(not DEBUG):
-    from gpiozero import Button
-    from gpiozero import RotaryEncoder
-    from gpiozero import DigitalInputDevice
-    from gpiozero import Motor
-    from gpiozero import DigitalOutputDevice
-
-    proximity = Button(17)
-    waterFlow = RotaryEncoder(21,20)
-    isOpened = Button(27)
-    isClosed = Button(22)
-
-    valve1IO = DigitalOutputDevice(15)
-    valve2IO = DigitalOutputDevice(16)
-    pump1 = DigitalOutputDevice(5)
-    pump2 = DigitalOutputDevice(6)
-    stepperEn = DigitalOutputDevice(23)
-    stepperDir = DigitalOutputDevice(24)
-    stepperPul = DigitalOutputDevice(12)
-    linearMotor = Motor(25,26)
 
 def valve1Act(exec : bool):
     global valve1IO
@@ -253,7 +233,8 @@ def linearMotorAct(exec : str):
         if(not DEBUG):
             linearMotor.backward()
     
-    linearMotor.stop()
+    if(not DEBUG):
+        linearMotor.stop()
 
     
 
@@ -285,15 +266,16 @@ class ScreenSplash(MDBoxLayout):
         global levelColdTank, levelMainTank, levelNormalTank
 
         # program for reading sensor end control system algorithm
-        levelMainTank = mainTank.read_register(5,0,3,False)
-        levelColdTank = coldTank.read_register(5,0,3,False)
-        levelNormalTank = normalTank.read_register(5,0,3,False)
+        if(not DEBUG):
+            levelMainTank = mainTank.read_register(5,0,3,False)
+            levelColdTank = coldTank.read_register(5,0,3,False)
+            levelNormalTank = normalTank.read_register(5,0,3,False)
         
-        levelCheck(
-            levelColdTank=levelColdTank,
-            levelNormalTank=levelNormalTank,
-            levelMainTank= levelNormalTank
-        )
+            levelCheck(
+                levelColdTank=levelColdTank,
+                levelNormalTank=levelNormalTank,
+                levelMainTank= levelNormalTank
+            )
 
         # pass
 
@@ -320,15 +302,16 @@ class ScreenChooseProduct(MDBoxLayout):
         global levelColdTank, levelMainTank, levelNormalTank
 
         # program for reading sensor end control system algorithm
-        levelMainTank = mainTank.read_register(5,0,3,False)
-        levelColdTank = coldTank.read_register(5,0,3,False)
-        levelNormalTank = normalTank.read_register(5,0,3,False)
+        if(not DEBUG):
+            levelMainTank = mainTank.read_register(5,0,3,False)
+            levelColdTank = coldTank.read_register(5,0,3,False)
+            levelNormalTank = normalTank.read_register(5,0,3,False)
 
-        levelCheck(
-            levelColdTank=levelColdTank,
-            levelNormalTank=levelNormalTank,
-            levelMainTank= levelNormalTank
-        )
+            levelCheck(
+                levelColdTank=levelColdTank,
+                levelNormalTank=levelNormalTank,
+                levelMainTank= levelNormalTank
+            )
         
 class ScreenChoosePayment(MDBoxLayout):
     screen_manager = ObjectProperty(None)
@@ -578,15 +561,16 @@ class ScreenMaintenance(MDBoxLayout):
     def regular_check(self, *args):
         global levelColdTank, levelMainTank, levelNormalTank
 
-        levelMainTank = mainTank.read_register(5,0,3,False)
-        levelColdTank = coldTank.read_register(5,0,3,False)
-        levelNormalTank = normalTank.read_register(5,0,3,False)
+        if (not DEBUG):
+            levelMainTank = mainTank.read_register(5,0,3,False)
+            levelColdTank = coldTank.read_register(5,0,3,False)
+            levelNormalTank = normalTank.read_register(5,0,3,False)
 
-        levelCheck(
-            levelColdTank=levelColdTank,
-            levelNormalTank=levelNormalTank,
-            levelMainTank= levelNormalTank
-        )
+            levelCheck(
+                levelColdTank=levelColdTank,
+                levelNormalTank=levelNormalTank,
+                levelMainTank= levelNormalTank
+            )
 
         # program for displaying IO condition        
         if (valve_1):
