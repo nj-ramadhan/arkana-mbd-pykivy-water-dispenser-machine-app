@@ -17,6 +17,15 @@ from pathlib import Path
 from kivy.properties import ObjectProperty
 from kivy.properties import StringProperty
 import time
+import qrcode
+
+
+qr = qrcode.QRCode(
+    version=1,
+    error_correction=qrcode.constants.ERROR_CORRECT_L,
+    box_size=10,
+    border=4,
+)
 
 colors = {
     "Blue": {
@@ -50,59 +59,77 @@ colors = {
 
 DEBUG = True
 
-valve = False
+valve_1 = False
+valve_2 = False
 pump_1 = False
 pump_2 = False
 linear_motor = False
 stepper_open_close = False
-
-# if(not DEBUG):
-from gpiozero import Button
-from gpiozero import RotaryEncoder
-from gpiozero import DigitalInputDevice
-from gpiozero import Motor
-from gpiozero import DigitalOutputDevice
-
-proximity = Button(17)
-waterFlow = RotaryEncoder(21,20)
-isOpened = Button(27)
-isClosed = Button(22)
-
-valveIO = DigitalOutputDevice(16)
-pump1 = DigitalOutputDevice(5)
-pump2 = DigitalOutputDevice(6)
-stepperEn = DigitalOutputDevice(23)
-stepperDir = DigitalOutputDevice(24)
-stepperPul = DigitalOutputDevice(12)
-linearMotor = Motor(25,26)
-
 cold = False
 
-def valveAct(exec : bool):
-    global valveIO
+if(not DEBUG):
+    from gpiozero import Button
+    from gpiozero import RotaryEncoder
+    from gpiozero import DigitalInputDevice
+    from gpiozero import Motor
+    from gpiozero import DigitalOutputDevice
+
+    proximity = Button(17)
+    waterFlow = RotaryEncoder(21,20)
+    isOpened = Button(27)
+    isClosed = Button(22)
+
+    valve1IO = DigitalOutputDevice(15)
+    valve2IO = DigitalOutputDevice(16)
+    pump1 = DigitalOutputDevice(5)
+    pump2 = DigitalOutputDevice(6)
+    stepperEn = DigitalOutputDevice(23)
+    stepperDir = DigitalOutputDevice(24)
+    stepperPul = DigitalOutputDevice(12)
+    linearMotor = Motor(25,26)
+
+def valve1Act(exec : bool):
+    global valve1IO
     if (exec):
-        valveIO.on()
-        print('valve on')
+        if(not DEBUG):
+            valve1IO.on()
+        print('valve 1 on')
     else :
-        valveIO.off()
-        print('valve off')
+        if(not DEBUG):
+            valve1IO.off()
+        print('valve 1 off')
+
+def valve2Act(exec : bool):
+    global valve2IO
+    if (exec):
+        if(not DEBUG):
+            valve2IO.on()
+        print('valve 2 on')
+    else :
+        if(not DEBUG):
+            valve2IO.off()
+        print('valve 2 off')
 
 def pump1Act(exec : bool):
     global pump1
     if (exec):
-        pump1.on()
+        if(not DEBUG):
+            pump1.on()
         print('pump 1 on')
     else :
-        pump1.off()
+        if(not DEBUG):
+            pump1.off()
         print('pump 1 off')
 
 def pump2Act(exec : bool):
     global pump2
     if (exec):
-        pump2.on()
+        if(not DEBUG):
+            pump2.on()
         print('pump 2 on')
     else :
-        pump2.off()
+        if(not DEBUG):
+            pump2.off()
         print('pump 2 off')
 
 def stepperAct(exec : str):
@@ -111,25 +138,29 @@ def stepperAct(exec : str):
     stepperEn.on()
     
     if (exec == 'open'):
-        stepperDir.on()
-        while not isOpened.value:
-            stepperPul.value = 0.5
-        
-        stepperPul.value = 0
+        if(not DEBUG):
+            stepperDir.on()
+            while not isOpened.value:
+                stepperPul.value = 0.5
+            
+            stepperPul.value = 0
     else:
-        stepperDir.off()
-        while not isClosed.value:
-            stepperPul.value = 0.5
-        
-        stepperPul.value = 0
+        if(not DEBUG):
+            stepperDir.off()
+            while not isClosed.value:
+                stepperPul.value = 0.5
+            
+            stepperPul.value = 0
 
 def linearMotorAct(exec : str):
     global linearMotor
     
     if (exec == 'up'):
-        linearMotor.forward()
+        if(not DEBUG):
+            linearMotor.forward()
     else:
-        linearMotor.backward()
+        if(not DEBUG):
+            linearMotor.backward()
     
     linearMotor.stop()
 
@@ -184,11 +215,19 @@ class ScreenChoosePayment(MDBoxLayout):
         super(ScreenChoosePayment, self).__init__(**kwargs)
 
     def pay(self, method):
+        global qr
+
         print(method)
         try:
             if(method=="GOPAY"):
-                time.sleep(0.5)
-                self.screen_manager.current = 'screen_operate'
+                time.sleep(0.1)
+                qr.add_data("insert data here")
+                qr.make(fit=True)
+
+                img = qr.make_image(back_color=(255, 195, 235), fill_color=(55, 95, 35))
+                img.save("qr_payment.png")
+
+                self.screen_manager.current = 'screen_qr_payment'
                 print("payment gopay")
                 toast("successfully pay with GOPAY")
 
@@ -206,7 +245,7 @@ class ScreenChoosePayment(MDBoxLayout):
         self.screen_manager.current = 'screen_choose_product'
 
 class ScreenOperate(MDBoxLayout):
-    screen_manager = ObjectProperty(None)\
+    screen_manager = ObjectProperty(None)
 
     def __init__(self, **kwargs):       
         super(ScreenOperate, self).__init__(**kwargs)
@@ -229,9 +268,11 @@ class ScreenOperate(MDBoxLayout):
 
     def fill_start(self):
         if (self.cold):
-            pump2Act(1)
+            if(not DEBUG):
+                pump2Act(1)
         else:
-            pump1Act(1)
+            if(not DEBUG):
+                pump1Act(1)
 
         print(cold)
         print("fill start")
@@ -255,6 +296,24 @@ class ScreenOperate(MDBoxLayout):
             self.ids.bt_cold.md_bg_color = "#09343C"
             self.ids.bt_normal.md_bg_color = "#3C9999"
 
+class ScreenQRPayment(MDBoxLayout):
+    screen_manager = ObjectProperty(None)
+
+    def __init__(self, **kwargs):
+        super(ScreenQRPayment, self).__init__(**kwargs)
+        Clock.schedule_interval(self.regular_check, 1)
+        # self.ids.layout_qr_payment.add_widget()
+
+    def regular_check(self, *args):
+        # self.ids.layout_qr_payment.add_widget()
+        pass
+
+    def cancel(self):
+        self.screen_manager.current = 'screen_choose_product'
+
+    def dummy_success(self):
+        self.screen_manager.current = 'screen_operate' 
+
 class ScreenInfo(MDBoxLayout):
     screen_manager = ObjectProperty(None)
 
@@ -266,6 +325,7 @@ class ScreenInfo(MDBoxLayout):
 
     def screen_maintenance(self):
         self.screen_manager.current = 'screen_maintenance'      
+ 
 
 class ScreenMaintenance(MDBoxLayout):
     screen_manager = ObjectProperty(None)
@@ -274,15 +334,24 @@ class ScreenMaintenance(MDBoxLayout):
         super(ScreenMaintenance, self).__init__(**kwargs)
         Clock.schedule_interval(self.regular_check, .1)
 
-    def act_valve(self):
-        global valve
+    def act_valve_1(self):
+        global valve_1
 
-        if (valve):
-            valve = False 
-            valveAct(False)
+        if (valve_1):
+            valve_1 = False 
+            valve1Act(False)
         else:
-            valve = True 
-            valveAct(True)
+            valve_1 = True 
+            valve1Act(True)
+
+    def act_valve_2(self):
+        global valve_2
+        if (valve_2):
+            valve_2 = False 
+            valve2Act(False)
+        else:
+            valve_2 = True 
+            valve2Act(True)
 
     def act_pump_1(self):
         global pump_1
@@ -357,10 +426,15 @@ class ScreenMaintenance(MDBoxLayout):
 
     def regular_check(self, *args):
         # program for displaying IO condition        
-        if (valve):
-            self.ids.bt_valve.md_bg_color = "#3C9999"
+        if (valve_1):
+            self.ids.bt_valve_1.md_bg_color = "#3C9999"
         else:
-            self.ids.bt_valve.md_bg_color = "#09343C"
+            self.ids.bt_valve_1.md_bg_color = "#09343C"
+
+        if (valve_2):
+            self.ids.bt_valve_2.md_bg_color = "#3C9999"
+        else:
+            self.ids.bt_valve_2.md_bg_color = "#09343C"
 
         if (pump_1):
             self.ids.bt_pump_1.md_bg_color = "#3C9999"
