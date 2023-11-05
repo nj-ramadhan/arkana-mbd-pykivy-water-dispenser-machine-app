@@ -16,6 +16,7 @@ from datetime import datetime
 from pathlib import Path
 from kivy.properties import ObjectProperty
 from kivy.properties import StringProperty
+import minimalmodbus
 import time
 import qrcode
 
@@ -61,32 +62,101 @@ DEBUG = True
 
 valve_1 = False
 valve_2 = False
+
 pump_1 = False
 pump_2 = False
 linear_motor = False
 stepper_open_close = False
-cold = False
+
+
+from gpiozero import Button
+from gpiozero import RotaryEncoder
+from gpiozero import DigitalInputDevice
+from gpiozero import Motor
+from gpiozero import DigitalOutputDevice
 
 if(not DEBUG):
-    from gpiozero import Button
-    from gpiozero import RotaryEncoder
-    from gpiozero import DigitalInputDevice
-    from gpiozero import Motor
-    from gpiozero import DigitalOutputDevice
-
     proximity = Button(17)
-    waterFlow = RotaryEncoder(21,20)
+    waterFlow = DigitalInputDevice(20)
     isOpened = Button(27)
     isClosed = Button(22)
 
-    valve1IO = DigitalOutputDevice(15)
-    valve2IO = DigitalOutputDevice(16)
-    pump1 = DigitalOutputDevice(5)
-    pump2 = DigitalOutputDevice(6)
+    valveDingin = DigitalOutputDevice(16)
+    valveNormal = DigitalOutputDevice(19)
+    pumpDingin = DigitalOutputDevice(5)
+    pumpNormal = DigitalOutputDevice(6)
     stepperEn = DigitalOutputDevice(23)
     stepperDir = DigitalOutputDevice(24)
     stepperPul = DigitalOutputDevice(12)
     linearMotor = Motor(25,26)
+
+BAUDRATE = 19200
+BYTESIZES = 8
+STOPBITS = 1
+TIMEOUT = 0.5
+PARITY = minimalmodbus.serial.PARITY_EVEN
+MODE = minimalmodbus.MODE_RTU
+
+pulsePerLiter = 450
+pulsePerMiliLiter = 450/1000
+
+cold = False
+product = 0
+pulse = 0
+levelMainTank = 0
+levelNormalTank = 0
+levelColdTank = 0
+
+if (not DEBUG):
+    mainTank = minimalmodbus.Instrument('dev/ttyUSB0', 1)
+    mainTank.serial.baudrate = BAUDRATE
+    mainTank.serial.bytesize = BYTESIZES
+    mainTank.serial.parity = PARITY
+    mainTank.serial.stopbits = STOPBITS
+    mainTank.serial.timeout = 0.5
+    mainTank.mode = MODE
+    mainTank.clear_buffers_before_each_transaction = True
+
+    coldTank = minimalmodbus.Instrument('dev/ttyUSB0', 2)
+    coldTank.serial.baudrate = BAUDRATE
+    coldTank.serial.bytesize = BYTESIZES
+    coldTank.serial.parity = PARITY
+    coldTank.serial.stopbits = STOPBITS
+    coldTank.serial.timeout = 0.5
+    coldTank.mode = MODE
+    coldTank.clear_buffers_before_each_transaction = True
+
+    normalTank = minimalmodbus.Instrument('dev/ttyUSB0', 3)
+    normalTank.serial.baudrate = BAUDRATE
+    normalTank.serial.bytesize = BYTESIZES
+    normalTank.serial.parity = PARITY
+    normalTank.serial.stopbits = STOPBITS
+    normalTank.serial.timeout = 0.5
+    normalTank.mode = MODE
+    normalTank.clear_buffers_before_each_transaction = True
+
+# waterFlow.when_activated(lambda : measure)
+
+def measure():
+    global pulse
+    pulse +=1
+
+def levelCheck(levelMainTank, levelColdTank, levelNormalTank):
+    if(levelMainTank >=500.0):
+      #send request to server
+        print('request for refill')
+    
+    if(levelColdTank >=50.0):            
+        pumpDinginAct(1)
+        
+    if(levelNormalTank >=50.0):
+        pumpNormalAct(1)
+
+    if(levelColdTank <=20.0):
+        pumpDinginAct(0)
+        
+    if(levelNormalTank <=20.0):
+        pumpDinginAct(0)
 
 def valve1Act(exec : bool):
     global valve1IO
@@ -110,32 +180,33 @@ def valve2Act(exec : bool):
             valve2IO.off()
         print('valve 2 off')
 
-def pump1Act(exec : bool):
-    global pump1
+def pumpDinginAct(exec : bool):
+    global pumpDingin
     if (exec):
         if(not DEBUG):
-            pump1.on()
+            pumpDingin.on()
         print('pump 1 on')
     else :
         if(not DEBUG):
-            pump1.off()
+            pumpDingin.off()
         print('pump 1 off')
 
-def pump2Act(exec : bool):
-    global pump2
+def pumpNormalAct(exec : bool):
+    global pumpNormal
     if (exec):
         if(not DEBUG):
-            pump2.on()
+            pumpNormal.on()
         print('pump 2 on')
     else :
         if(not DEBUG):
-            pump2.off()
+            pumpNormal.off()
         print('pump 2 off')
 
 def stepperAct(exec : str):
     global stepperEn, stepperDir ,stepperPul, isOpened, isClosed
     
-    stepperEn.on()
+    if(not DEBUG):
+        stepperEn.on()
     
     if (exec == 'open'):
         if(not DEBUG):
@@ -162,7 +233,8 @@ def linearMotorAct(exec : str):
         if(not DEBUG):
             linearMotor.backward()
     
-    linearMotor.stop()
+    if(not DEBUG):
+        linearMotor.stop()
 
     
 
@@ -191,8 +263,21 @@ class ScreenSplash(MDBoxLayout):
             return False
 
     def regular_check(self, *args):
+        global levelColdTank, levelMainTank, levelNormalTank
+
         # program for reading sensor end control system algorithm
-        pass
+        if(not DEBUG):
+            levelMainTank = mainTank.read_register(5,0,3,False)
+            levelColdTank = coldTank.read_register(5,0,3,False)
+            levelNormalTank = normalTank.read_register(5,0,3,False)
+        
+            levelCheck(
+                levelColdTank=levelColdTank,
+                levelNormalTank=levelNormalTank,
+                levelMainTank= levelNormalTank
+            )
+
+        # pass
 
 
 class ScreenChooseProduct(MDBoxLayout):
@@ -200,13 +285,33 @@ class ScreenChooseProduct(MDBoxLayout):
 
     def __init__(self, **kwargs):
         super(ScreenChooseProduct, self).__init__(**kwargs)
+        Clock.schedule_interval(self.regular_check, .1)
 
     def choose_payment(self, value):
+        global product
         self.screen_manager.current = 'screen_choose_payment'
         print(value)
+        product = value
+        print(type(product))
+
 
     def screen_info(self):
         self.screen_manager.current = 'screen_info'
+
+    def regular_check(self, *args):
+        global levelColdTank, levelMainTank, levelNormalTank
+
+        # program for reading sensor end control system algorithm
+        if(not DEBUG):
+            levelMainTank = mainTank.read_register(5,0,3,False)
+            levelColdTank = coldTank.read_register(5,0,3,False)
+            levelNormalTank = normalTank.read_register(5,0,3,False)
+
+            levelCheck(
+                levelColdTank=levelColdTank,
+                levelNormalTank=levelNormalTank,
+                levelMainTank= levelNormalTank
+            )
         
 class ScreenChoosePayment(MDBoxLayout):
     screen_manager = ObjectProperty(None)
@@ -283,20 +388,33 @@ class ScreenOperate(MDBoxLayout):
         cold = value
 
     def fill_start(self):
-        if (self.cold):
-            if(not DEBUG):
-                pump2Act(1)
-        else:
-            if(not DEBUG):
-                pump1Act(1)
+        global pulse, product, pulsePerMiliLiter
+
+        if(not DEBUG):
+          stepperAct('open')
+        pulse = 0
+
+        while pulse <= pulsePerMiliLiter*product:
+            if (cold):
+              if(not DEBUG):
+                pumpDinginAct(1)
+            else:
+              if(not DEBUG):
+                pumpNormalAct(1)
+        
+        if(not DEBUG):
+          pumpDinginAct(0)
+          pumpNormalAct(0)
+          stepperAct('close')
 
         print(cold)
         print("fill start")
         toast("water filling is started")
 
     def fill_stop(self):
-        pump1Act(0)
-        pump2Act(0)
+        if(not DEBUG):
+          pumpDinginAct(0)
+          pumpNormalAct(0)
 
         print("fill stop")
         toast("thank you for decreasing plastic bottle trash by buying our product")
@@ -373,20 +491,20 @@ class ScreenMaintenance(MDBoxLayout):
         global pump_1
 
         if (pump_1):
-            pump1Act(True)
+            pumpDinginAct(True)
             pump_1 = False
         else:
-            pump1Act(False)
+            pumpDinginAct(False)
             pump_1 = True
 
     def act_pump_2(self):
         global pump_2
 
         if (pump_2):
-            pump2Act(True)
+            pumpNormalAct(True)
             pump_2 = False
         else:
-            pump2Act(False)
+            pumpNormalAct(False)
             pump_2 = True
 
     def act_open(self):
@@ -441,6 +559,19 @@ class ScreenMaintenance(MDBoxLayout):
         self.screen_manager.current = 'screen_choose_product'
 
     def regular_check(self, *args):
+        global levelColdTank, levelMainTank, levelNormalTank
+
+        if (not DEBUG):
+            levelMainTank = mainTank.read_register(5,0,3,False)
+            levelColdTank = coldTank.read_register(5,0,3,False)
+            levelNormalTank = normalTank.read_register(5,0,3,False)
+
+            levelCheck(
+                levelColdTank=levelColdTank,
+                levelNormalTank=levelNormalTank,
+                levelMainTank= levelNormalTank
+            )
+
         # program for displaying IO condition        
         if (valve_1):
             self.ids.bt_valve_1.md_bg_color = "#3C9999"
