@@ -54,9 +54,7 @@
 
 			Image:
 				id: image_qr_payment
-				font_size: 20
-				size_hint_y: 2
-				color: 0, 0, 0
+				allow_stretch: True 
 
 
 	MDRelativeLayout:
@@ -65,8 +63,8 @@
 			icon: "cancel"
 			text: "CANCEL"
 			font_size: 28
-			size_hint: 0.25, 0.15
-			pos_hint: {"center_x": .75, "center_y": .15}
+			size_hint: 0.4, 0.1
+			pos_hint: {"center_x": .8, "center_y": .1}
 			on_press: root.cancel()
 
 		MDFillRoundFlatIconButton:

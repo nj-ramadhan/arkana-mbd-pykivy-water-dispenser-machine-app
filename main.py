@@ -60,11 +60,11 @@ colors = {
 
 DEBUG = True
 
-valve_1 = False
-valve_2 = False
-
-pump_1 = False
-pump_2 = False
+valve_cold = False
+valve_normal = False
+pump_main = False
+pump_cold = False
+pump_normal = False
 linear_motor = False
 stepper_open_close = False
 
@@ -76,20 +76,20 @@ from gpiozero import Motor
 from gpiozero import DigitalOutputDevice
 
 if(not DEBUG):
-    proximity = Button(17)
-    waterFlow = DigitalInputDevice(19)
-    isOpened = Button(27)
-    isClosed = Button(22)
+    in_sensor_proximity = Button(17)
+    in_sensor_flow = DigitalInputDevice(19)
+    in_limit_opened = Button(27)
+    in_limit_closed = Button(22)
 
-    valveDingin = DigitalOutputDevice(20)
-    valveNormal = DigitalOutputDevice(26)
-    pumpMainTank = DigitalOutputDevice(21)
-    pumpDingin = DigitalOutputDevice(5)
-    pumpNormal = DigitalOutputDevice(6)
-    stepperEn = DigitalOutputDevice(23)
-    stepperDir = DigitalOutputDevice(24)
-    stepperPul = DigitalOutputDevice(12)
-    linearMotor = Motor(25,16)
+    out_valve_cold = DigitalOutputDevice(20)
+    out_valve_normal = DigitalOutputDevice(26)
+    out_pump_main = DigitalOutputDevice(21)
+    out_pump_cold = DigitalOutputDevice(5)
+    out_pump_normal = DigitalOutputDevice(6)
+    out_stepper_enable = DigitalOutputDevice(23)
+    out_stepper_direction = DigitalOutputDevice(24)
+    out_stepper_pulse = DigitalOutputDevice(12)
+    out_motor_linear = Motor(16, 25)
 
 BAUDRATE = 19200
 BYTESIZES = 8
@@ -136,7 +136,7 @@ if (not DEBUG):
     normalTank.mode = MODE
     normalTank.clear_buffers_before_each_transaction = True
 
-# waterFlow.when_activated(lambda : measure)
+# in_sensor_flow.when_activated(lambda : measure)
 
 def measure():
     global pulse
@@ -148,18 +148,18 @@ def levelCheck(levelMainTank, levelColdTank, levelNormalTank):
         print('request for refill')
     
     if(levelColdTank >=50.0):            
-        pumpDinginAct(1)
+        pumpColdAct(1)
         
     if(levelNormalTank >=50.0):
         pumpNormalAct(1)
 
     if(levelColdTank <=20.0):
-        pumpDinginAct(0)
+        pumpColdAct(0)
         
     if(levelNormalTank <=20.0):
-        pumpDinginAct(0)
+        pumpColdAct(0)
 
-def valve1Act(exec : bool):
+def valveColdAct(exec : bool):
     global valve1IO
     if (exec):
         if(not DEBUG):
@@ -170,7 +170,7 @@ def valve1Act(exec : bool):
             valve1IO.off()
         print('valve 1 off')
 
-def valve2Act(exec : bool):
+def valveNormalAct(exec : bool):
     global valve2IO
     if (exec):
         if(not DEBUG):
@@ -181,61 +181,72 @@ def valve2Act(exec : bool):
             valve2IO.off()
         print('valve 2 off')
 
-def pumpDinginAct(exec : bool):
-    global pumpDingin
+def pumpMainAct(exec : bool):
+    global out_pump_main
     if (exec):
         if(not DEBUG):
-            pumpDingin.on()
-        print('pump 1 on')
+            out_pump_main.on()
+        print('pump main on')
     else :
         if(not DEBUG):
-            pumpDingin.off()
-        print('pump 1 off')
+            out_pump_main.off()
+        print('pump main off')
+
+def pumpColdAct(exec : bool):
+    global out_pump_cold
+    if (exec):
+        if(not DEBUG):
+            out_pump_cold.on()
+        print('pump cold on')
+    else :
+        if(not DEBUG):
+            out_pump_cold.off()
+        print('pump cold off')
 
 def pumpNormalAct(exec : bool):
-    global pumpNormal
+    global out_pump_normal
     if (exec):
         if(not DEBUG):
-            pumpNormal.on()
-        print('pump 2 on')
+            out_pump_normal.on()
+        print('pump normal on')
     else :
         if(not DEBUG):
-            pumpNormal.off()
-        print('pump 2 off')
+            out_pump_normal.off()
+        print('pump normal off')
 
 def stepperAct(exec : str):
-    global stepperEn, stepperDir ,stepperPul, isOpened, isClosed
+    global out_stepper_enable, out_stepper_direction ,out_stepper_pulse, in_limit_opened, in_limit_closed
     
     if(not DEBUG):
-        stepperEn.on()
+        out_stepper_enable.on()
     
     if (exec == 'open'):
         if(not DEBUG):
-            stepperDir.on()
-            while not isOpened.value:
-                stepperPul.value = 0.5
+            out_stepper_direction.on()
+            while not in_limit_opened.value:
+                out_stepper_pulse.value = 0.5
             
-            stepperPul.value = 0
+            out_stepper_pulse.value = 0
     else:
         if(not DEBUG):
-            stepperDir.off()
-            while not isClosed.value:
-                stepperPul.value = 0.5
+            out_stepper_direction.off()
+            while not in_limit_closed.value:
+                out_stepper_pulse.value = 0.5
             
-            stepperPul.value = 0
+            out_stepper_pulse.value = 0
 
 def linearMotorAct(exec : str):
-    global linearMotor
+    global out_motor_linear
     
     if (exec == 'up'):
         if(not DEBUG):
-            linearMotor.forward()
+            out_motor_linear.forward()
     else:
         if(not DEBUG):
-            linearMotor.backward()
+            out_motor_linear.backward()
     
     if(not DEBUG):
-        linearMotor.stop()
+        out_motor_linear.stop()
 
     
 
@@ -277,7 +288,6 @@ class ScreenSplash(MDBoxLayout):
                 levelNormalTank=levelNormalTank,
                 levelMainTank= levelNormalTank
             )
-
         # pass
 
 
@@ -288,6 +298,10 @@ class ScreenChooseProduct(MDBoxLayout):
         super(ScreenChooseProduct, self).__init__(**kwargs)
         Clock.schedule_interval(self.regular_check, .1)
 
+    def cold_mode(self, value):
+        global cold
+        cold = value
+
     def choose_payment(self, value):
         global product
         self.screen_manager.current = 'screen_choose_payment'
@@ -295,12 +309,11 @@ class ScreenChooseProduct(MDBoxLayout):
         product = value
         print(type(product))
 
-
     def screen_info(self):
         self.screen_manager.current = 'screen_info'
 
     def regular_check(self, *args):
-        global levelColdTank, levelMainTank, levelNormalTank
+        global levelColdTank, levelMainTank, levelNormalTank, cold
 
         # program for reading sensor end control system algorithm
         if(not DEBUG):
@@ -313,7 +326,15 @@ class ScreenChooseProduct(MDBoxLayout):
                 levelNormalTank=levelNormalTank,
                 levelMainTank= levelNormalTank
             )
-        
+
+        # program for displaying IO condition
+        if (cold):
+            self.ids.bt_cold.md_bg_color = "#3C9999"
+            self.ids.bt_normal.md_bg_color = "#09343C"
+        else:
+            self.ids.bt_cold.md_bg_color = "#09343C"
+            self.ids.bt_normal.md_bg_color = "#3C9999"       
+
 class ScreenChoosePayment(MDBoxLayout):
     screen_manager = ObjectProperty(None)
 
@@ -330,31 +351,31 @@ class ScreenChoosePayment(MDBoxLayout):
                 qr.add_data("insert data here, it is gopay now")
                 qr.make(fit=True)
 
-                img = qr.make_image(back_color=(200, 200, 200), fill_color=(55, 95, 100))
+                img = qr.make_image(back_color=(255, 255, 255), fill_color=(55, 95, 100))
                 img.save("qr_payment.png")
 
                 self.screen_manager.current = 'screen_qr_payment'
                 print("payment gopay")
                 toast("successfully pay with GOPAY")
 
-            elif(method=="OVO"):
+            elif(method=="ShopeePay"):
                 time.sleep(0.1)
-                qr.add_data("insert data here, it is ovo now")
+                qr.add_data("insert data here, it is ShopeePay now")
                 qr.make(fit=True)
 
-                img = qr.make_image(back_color=(200, 200, 200), fill_color=(55, 95, 100))
+                img = qr.make_image(back_color=(255, 255, 255), fill_color=(55, 95, 100))
                 img.save("qr_payment.png")
 
                 self.screen_manager.current = 'screen_qr_payment'
                 print("payment ovo")
-                toast("successfully pay with OVO")
+                toast("successfully pay with ShopeePay")
 
             elif(method=="QRIS"):
                 time.sleep(0.1)
                 qr.add_data("insert data here, it is QRIS now")
                 qr.make(fit=True)
 
-                img = qr.make_image(back_color=(200, 200, 200), fill_color=(55, 95, 100))
+                img = qr.make_image(back_color=(255, 255, 255), fill_color=(55, 95, 100))
                 img.save("qr_payment.png")
 
                 self.screen_manager.current = 'screen_qr_payment'
@@ -371,7 +392,6 @@ class ScreenOperate(MDBoxLayout):
 
     def __init__(self, **kwargs):       
         super(ScreenOperate, self).__init__(**kwargs)
-        Clock.schedule_interval(self.regular_check, .1)
 
     def move_up(self):
         linearMotorAct('up')
@@ -383,30 +403,25 @@ class ScreenOperate(MDBoxLayout):
         print("move down")
         toast("moving tumbler base down")
 
-    def cold_mode(self, value):
-        global cold
-
-        cold = value
-
     def fill_start(self):
         global pulse, product, pulsePerMiliLiter
 
         if(not DEBUG):
-          stepperAct('open')
+            stepperAct('open')
         pulse = 0
 
         while pulse <= pulsePerMiliLiter*product:
             if (cold):
               if(not DEBUG):
-                pumpDinginAct(1)
+                pumpColdAct(1)
             else:
               if(not DEBUG):
                 pumpNormalAct(1)
         
         if(not DEBUG):
-          pumpDinginAct(0)
-          pumpNormalAct(0)
-          stepperAct('close')
+            pumpColdAct(0)
+            pumpNormalAct(0)
+            stepperAct('close')
 
         print(cold)
         print("fill start")
@@ -414,22 +429,12 @@ class ScreenOperate(MDBoxLayout):
 
     def fill_stop(self):
         if(not DEBUG):
-          pumpDinginAct(0)
-          pumpNormalAct(0)
+            pumpColdAct(0)
+            pumpNormalAct(0)
 
         print("fill stop")
         toast("thank you for decreasing plastic bottle trash by buying our product")
         self.screen_manager.current = 'screen_choose_product'
-
-    def regular_check(self, *args):
-        # program for displaying IO condition
-        global cold 
-        if (cold):
-            self.ids.bt_cold.md_bg_color = "#3C9999"
-            self.ids.bt_normal.md_bg_color = "#09343C"
-        else:
-            self.ids.bt_cold.md_bg_color = "#09343C"
-            self.ids.bt_normal.md_bg_color = "#3C9999"
 
 class ScreenQRPayment(MDBoxLayout):
     screen_manager = ObjectProperty(None)
@@ -469,47 +474,57 @@ class ScreenMaintenance(MDBoxLayout):
         super(ScreenMaintenance, self).__init__(**kwargs)
         Clock.schedule_interval(self.regular_check, .1)
 
-    def act_valve_1(self):
-        global valve_1
+    def act_valve_cold(self):
+        global valve_cold
 
-        if (valve_1):
-            valve_1 = False 
-            valve1Act(False)
+        if (valve_cold):
+            valve_cold = False 
+            valveColdAct(False)
         else:
-            valve_1 = True 
-            valve1Act(True)
+            valve_cold = True 
+            valveColdAct(True)
 
-    def act_valve_2(self):
-        global valve_2
-        if (valve_2):
-            valve_2 = False 
-            valve2Act(False)
+    def act_valve_normal(self):
+        global valve_normal
+        if (valve_normal):
+            valve_normal = False 
+            valveNormalAct(False)
         else:
-            valve_2 = True 
-            valve2Act(True)
+            valve_normal = True 
+            valveNormalAct(True)
 
-    def act_pump_1(self):
-        global pump_1
+    def act_pump_main(self):
+        global pump_main
 
-        if (pump_1):
-            pumpDinginAct(True)
-            pump_1 = False
+        if (pump_main):
+            pumpMainAct(True)
+            pump_main = False
         else:
-            pumpDinginAct(False)
-            pump_1 = True
+            pumpMainAct(False)
+            pump_main = True
 
-    def act_pump_2(self):
-        global pump_2
+    def act_pump_cold(self):
+        global pump_cold
 
-        if (pump_2):
+        if (pump_cold):
+            pumpColdAct(True)
+            pump_cold = False
+        else:
+            pumpColdAct(False)
+            pump_cold = True
+
+    def act_pump_normal(self):
+        global pump_normal
+
+        if (pump_normal):
             pumpNormalAct(True)
-            pump_2 = False
+            pump_normal = False
         else:
             pumpNormalAct(False)
-            pump_2 = True
+            pump_normal = True
 
     def act_open(self):
-        global stepper_open_close, isOpened
+        global stepper_open_close, in_limit_opened
 
         # stepper_open_close is boolean, if stepper_open_close on it can change GPIO condition to move open or close
         # if (stepper_open_close):
@@ -519,13 +534,17 @@ class ScreenMaintenance(MDBoxLayout):
         #     stepperAct('close')
         #     stepper_open_close = True
         # if not lsOpen
-        if (not isOpened) :
-            stepperAct('open')
-            stepper_open_close = False
+        try:
+            if (not in_limit_opened) :
+                stepperAct('open')
+                stepper_open_close = False
+        except:
+            toast("error")
+
 
 
     def act_close(self):
-        global stepper_open_close, isClosed
+        global stepper_open_close, in_limit_closed
 
         # stepper_open_close is boolean, if stepper_open_close on it can change GPIO condition to move open or close
         # if (stepper_open_close):
@@ -535,9 +554,12 @@ class ScreenMaintenance(MDBoxLayout):
         #     stepperAct('close')
         #     stepper_open_close = True
 
-        if (not isClosed) :
-            stepperAct('close')
-            stepper_open_close = True
+        try:
+            if (not in_limit_closed) :
+                stepperAct('close')
+                stepper_open_close = True
+        except:
+            toast("error")
 
     def act_up(self):
         global linear_motor
@@ -574,25 +596,30 @@ class ScreenMaintenance(MDBoxLayout):
             )
 
         # program for displaying IO condition        
-        if (valve_1):
-            self.ids.bt_valve_1.md_bg_color = "#3C9999"
+        if (valve_cold):
+            self.ids.bt_valve_cold.md_bg_color = "#3C9999"
         else:
-            self.ids.bt_valve_1.md_bg_color = "#09343C"
+            self.ids.bt_valve_cold.md_bg_color = "#09343C"
 
-        if (valve_2):
-            self.ids.bt_valve_2.md_bg_color = "#3C9999"
+        if (valve_normal):
+            self.ids.bt_valve_normal.md_bg_color = "#3C9999"
         else:
-            self.ids.bt_valve_2.md_bg_color = "#09343C"
+            self.ids.bt_valve_normal.md_bg_color = "#09343C"
 
-        if (pump_1):
-            self.ids.bt_pump_1.md_bg_color = "#3C9999"
+        if (pump_main):
+            self.ids.bt_pump_main.md_bg_color = "#3C9999"
         else:
-            self.ids.bt_pump_1.md_bg_color = "#09343C"
+            self.ids.bt_pump_main.md_bg_color = "#09343C"
 
-        if (pump_2):
-            self.ids.bt_pump_2.md_bg_color = "#3C9999"
+        if (pump_cold):
+            self.ids.bt_pump_cold.md_bg_color = "#3C9999"
         else:
-            self.ids.bt_pump_2.md_bg_color = "#09343C"
+            self.ids.bt_pump_cold.md_bg_color = "#09343C"
+
+        if (pump_normal):
+            self.ids.bt_pump_normal.md_bg_color = "#3C9999"
+        else:
+            self.ids.bt_pump_normal.md_bg_color = "#09343C"
 
         if (stepper_open_close):
             self.ids.bt_open.md_bg_color = "#3C9999"
@@ -612,7 +639,7 @@ class WaterDispenserMachineApp(MDApp):
         self.icon = 'asset/Icon_Logo.png'
         # Window.fullscreen = 'auto'
         # Window.borderless = True
-        Window.size = 800, 600
+        Window.size = 1080, 640
         # Window.allow_screensaver = True
 
         screen = Builder.load_file('main.kv')
