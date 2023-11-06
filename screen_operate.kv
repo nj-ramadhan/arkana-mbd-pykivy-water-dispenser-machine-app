@@ -57,45 +57,27 @@
 		MDFillRoundFlatIconButton:
 			id: bt_move_up
 			icon: "arrow-up"
-			text: " "
+			text: "UP"
 			font_size: 28
-			size_hint: 0.25, 0.15
+			size_hint: 0.4, 0.1
 			pos_hint: {"center_x": -0.5, "center_y": .45}
 			on_press: root.move_up()
 
 		MDFillRoundFlatIconButton:
 			id: bt_move_down
 			icon: "arrow-down"
-			text: " "
+			text: "DOWN"
 			font_size: 28
-			size_hint: 0.25, 0.15
+			size_hint: 0.4, 0.1
 			pos_hint: {"center_x": -0.5, "center_y": .15}
 			on_press: root.move_down()
-
-		MDFillRoundFlatIconButton:
-			id: bt_cold
-			icon: "snowflake"
-			text: "Cold"
-			font_size: 24
-			size_hint: 0.20, 0.10
-			pos_hint: {"center_x": .25, "center_y": 0.65}
-			on_press: root.cold_mode(True)
-
-		MDFillRoundFlatIconButton:
-			id: bt_normal
-			icon: "snowflake-off"
-			text: "Normal"
-			font_size: 24
-			size_hint: 0.20, 0.10
-			pos_hint: {"center_x": 0.70, "center_y": 0.65}
-			on_press: root.cold_mode(False)
 
 		MDFillRoundFlatIconButton:
 			id: bt_fill_start
 			icon: "play"
 			text: "START"
 			font_size: 28
-			size_hint: 0.25, 0.15
+			size_hint: 0.4, 0.1
 			pos_hint: {"center_x": .5, "center_y": .45}
 			on_press: root.fill_start()
 
@@ -104,6 +86,6 @@
 			icon: "stop"
 			text: "STOP"
 			font_size: 28
-			size_hint: 0.25, 0.15
+			size_hint: 0.4, 0.1
 			pos_hint: {"center_x": .5, "center_y": .15}
 			on_press: root.fill_stop()
