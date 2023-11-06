@@ -77,18 +77,19 @@ from gpiozero import DigitalOutputDevice
 
 if(not DEBUG):
     proximity = Button(17)
-    waterFlow = DigitalInputDevice(20)
+    waterFlow = DigitalInputDevice(19)
     isOpened = Button(27)
     isClosed = Button(22)
 
-    valveDingin = DigitalOutputDevice(16)
-    valveNormal = DigitalOutputDevice(19)
+    valveDingin = DigitalOutputDevice(20)
+    valveNormal = DigitalOutputDevice(26)
+    pumpMainTank = DigitalOutputDevice(21)
     pumpDingin = DigitalOutputDevice(5)
     pumpNormal = DigitalOutputDevice(6)
     stepperEn = DigitalOutputDevice(23)
     stepperDir = DigitalOutputDevice(24)
     stepperPul = DigitalOutputDevice(12)
-    linearMotor = Motor(25,26)
+    linearMotor = Motor(25,16)
 
 BAUDRATE = 19200
 BYTESIZES = 8
