@@ -59,6 +59,39 @@
                 allow_stretch: True  
 
 	MDRelativeLayout:
+		MDLabel:
+			id: lb_level_main
+			halign: 'center'
+			valign: 'middle'    
+			bold: True
+			font_size: 21
+			color: app.theme_cls.primary_color
+			md_bg_color: app.theme_cls.accent_color
+			size_hint: 0.2, 0.08
+			pos_hint: {"center_x": -0.37, "center_y": .4}
+
+		MDLabel:
+			id: lb_level_cold
+			halign: 'center'
+			valign: 'middle'    
+			bold: True
+			font_size: 21
+			color: app.theme_cls.primary_color
+			md_bg_color: app.theme_cls.accent_color
+			size_hint: 0.2, 0.08
+			pos_hint: {"center_x": 0.34, "center_y": .5}
+
+		MDLabel:
+			id: lb_level_normal
+			halign: 'center'
+			valign: 'middle'    
+			bold: True
+			font_size: 21
+			color: app.theme_cls.primary_color
+			md_bg_color: app.theme_cls.accent_color
+			size_hint: 0.2, 0.08
+			pos_hint: {"center_x": 0.64, "center_y": .5}
+
 		MDFillRoundFlatIconButton:
 			id: bt_valve_cold
 			icon: "valve"

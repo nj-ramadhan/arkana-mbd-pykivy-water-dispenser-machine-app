@@ -290,7 +290,6 @@ class ScreenSplash(MDBoxLayout):
             )
         # pass
 
-
 class ScreenChooseProduct(MDBoxLayout):
     screen_manager = ObjectProperty(None)
 
@@ -583,6 +582,10 @@ class ScreenMaintenance(MDBoxLayout):
 
     def regular_check(self, *args):
         global levelColdTank, levelMainTank, levelNormalTank
+
+        self.ids.lb_level_main.text = str(levelMainTank)
+        self.ids.lb_level_cold.text = str(levelColdTank)
+        self.ids.lb_level_normal.text = str(levelNormalTank)
 
         if (not DEBUG):
             levelMainTank = mainTank.read_register(5,0,3,False)
