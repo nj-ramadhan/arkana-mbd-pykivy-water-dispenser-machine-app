@@ -60,13 +60,6 @@ colors = {
 
 DEBUG = True
 
-valve_cold = False
-valve_normal = False
-pump_main = False
-pump_cold = False
-pump_normal = False
-linear_motor = False
-stepper_open_close = False
 
 
 from gpiozero import Button
@@ -91,11 +84,29 @@ if(not DEBUG):
     out_stepper_pulse = DigitalOutputDevice(12)
     out_motor_linear = Motor(16, 25)
 
-BAUDRATE = 19200
+
+if (not DEBUG):
+    valve_cold = out_valve_cold.value
+    valve_normal = out_valve_normal.value
+    pump_main = out_pump_main.value
+    pump_cold = out_pump_cold.value
+    pump_normal = out_pump_normal.value
+    linear_motor = False
+    stepper_open_close = in_limit_closed.value
+else :
+    valve_cold = False
+    valve_normal = False
+    pump_main = False
+    pump_cold = False
+    pump_normal = False
+    linear_motor = False
+    stepper_open_close = False
+
+BAUDRATE = 9600
 BYTESIZES = 8
 STOPBITS = 1
 TIMEOUT = 0.5
-PARITY = minimalmodbus.serial.PARITY_EVEN
+PARITY = minimalmodbus.serial.PARITY_NONE
 MODE = minimalmodbus.MODE_RTU
 
 pulsePerLiter = 450
@@ -138,6 +149,17 @@ if (not DEBUG):
 
 # in_sensor_flow.when_activated(lambda : measure)
 
+check_sensor = False
+if (not DEBUG and check_sensor):
+    in_limit_closed.when_activated(lambda : print('ls close is up'))
+    in_limit_closed.when_deactivated(lambda : print('ls close is down'))
+    in_limit_opened.when_activated(lambda : print('ls open is up'))
+    in_limit_opened.when_deactivated(lambda : print('ls open is down'))
+    in_sensor_flow.when_activated(lambda : print('flow is up'))
+    in_sensor_flow.when_deactivated(lambda : print('flow is down'))
+    in_sensor_proximity.when_activated(lambda : print('proximity is up'))
+    in_sensor_proximity.when_deactivated(lambda : print('proximity is down'))
+
 def measure():
     global pulse
     pulse +=1
@@ -160,30 +182,30 @@ def levelCheck(levelMainTank, levelColdTank, levelNormalTank):
         pumpColdAct(0)
 
 def valveColdAct(exec : bool):
-    global valve1IO
-    if (exec):
+    global out_valve_cold
+    if (not exec):
         if(not DEBUG):
-            valve1IO.on()
+            out_valve_cold.on()
         print('valve 1 on')
     else :
         if(not DEBUG):
-            valve1IO.off()
+            out_valve_cold.off()
         print('valve 1 off')
 
 def valveNormalAct(exec : bool):
-    global valve2IO
-    if (exec):
+    global out_valve_normal
+    if (not exec):
         if(not DEBUG):
-            valve2IO.on()
+            out_valve_normal.on()
         print('valve 2 on')
     else :
         if(not DEBUG):
-            valve2IO.off()
+            out_valve_normal.off()
         print('valve 2 off')
 
 def pumpMainAct(exec : bool):
     global out_pump_main
-    if (exec):
+    if (not exec):
         if(not DEBUG):
             out_pump_main.on()
         print('pump main on')
