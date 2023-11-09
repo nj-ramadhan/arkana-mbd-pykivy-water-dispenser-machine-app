@@ -60,8 +60,6 @@ colors = {
 
 DEBUG = True
 
-
-
 from gpiozero import Button
 from gpiozero import RotaryEncoder
 from gpiozero import DigitalInputDevice
@@ -82,25 +80,15 @@ if(not DEBUG):
     out_stepper_enable = DigitalOutputDevice(23)
     out_stepper_direction = DigitalOutputDevice(24)
     out_stepper_pulse = DigitalOutputDevice(12)
-    out_motor_linear = Motor(16, 25)
+    out_motor_linear = Motor(16, 9)
 
-
-if (not DEBUG):
-    valve_cold = out_valve_cold.value
-    valve_normal = out_valve_normal.value
-    pump_main = out_pump_main.value
-    pump_cold = out_pump_cold.value
-    pump_normal = out_pump_normal.value
-    linear_motor = False
-    stepper_open_close = in_limit_closed.value
-else :
-    valve_cold = False
-    valve_normal = False
-    pump_main = False
-    pump_cold = False
-    pump_normal = False
-    linear_motor = False
-    stepper_open_close = False
+valve_cold = False
+valve_normal = False
+pump_main = False
+pump_cold = False
+pump_normal = False
+linear_motor = False
+stepper_open_close = False
 
 BAUDRATE = 9600
 BYTESIZES = 8
@@ -118,9 +106,10 @@ pulse = 0
 levelMainTank = 0
 levelNormalTank = 0
 levelColdTank = 0
+# in_sensor_flow.when_activated(lambda : measure)
 
 if (not DEBUG):
-    mainTank = minimalmodbus.Instrument('dev/ttyUSB0', 1)
+    mainTank = minimalmodbus.Instrument('/dev/ttyUSB0', 1)
     mainTank.serial.baudrate = BAUDRATE
     mainTank.serial.bytesize = BYTESIZES
     mainTank.serial.parity = PARITY
@@ -129,7 +118,7 @@ if (not DEBUG):
     mainTank.mode = MODE
     mainTank.clear_buffers_before_each_transaction = True
 
-    coldTank = minimalmodbus.Instrument('dev/ttyUSB0', 2)
+    coldTank = minimalmodbus.Instrument('/dev/ttyUSB0', 2)
     coldTank.serial.baudrate = BAUDRATE
     coldTank.serial.bytesize = BYTESIZES
     coldTank.serial.parity = PARITY
@@ -138,7 +127,7 @@ if (not DEBUG):
     coldTank.mode = MODE
     coldTank.clear_buffers_before_each_transaction = True
 
-    normalTank = minimalmodbus.Instrument('dev/ttyUSB0', 3)
+    normalTank = minimalmodbus.Instrument('/dev/ttyUSB0', 3)
     normalTank.serial.baudrate = BAUDRATE
     normalTank.serial.bytesize = BYTESIZES
     normalTank.serial.parity = PARITY
@@ -147,39 +136,31 @@ if (not DEBUG):
     normalTank.mode = MODE
     normalTank.clear_buffers_before_each_transaction = True
 
-# in_sensor_flow.when_activated(lambda : measure)
-
-check_sensor = False
-if (not DEBUG and check_sensor):
-    in_limit_closed.when_activated(lambda : print('ls close is up'))
-    in_limit_closed.when_deactivated(lambda : print('ls close is down'))
-    in_limit_opened.when_activated(lambda : print('ls open is up'))
-    in_limit_opened.when_deactivated(lambda : print('ls open is down'))
-    in_sensor_flow.when_activated(lambda : print('flow is up'))
-    in_sensor_flow.when_deactivated(lambda : print('flow is down'))
-    in_sensor_proximity.when_activated(lambda : print('proximity is up'))
-    in_sensor_proximity.when_deactivated(lambda : print('proximity is down'))
-
 def measure():
     global pulse
     pulse +=1
 
 def levelCheck(levelMainTank, levelColdTank, levelNormalTank):
+    
     if(levelMainTank >=500.0):
       #send request to server
         print('request for refill')
     
     if(levelColdTank >=50.0):            
-        pumpColdAct(1)
+        #pumpColdAct(1)
+        pass
         
     if(levelNormalTank >=50.0):
-        pumpNormalAct(1)
+        #pumpNormalAct(1)
+        pass
 
     if(levelColdTank <=20.0):
-        pumpColdAct(0)
-        
+        #pumpColdAct(0)
+        pass
+    
     if(levelNormalTank <=20.0):
-        pumpColdAct(0)
+        #pumpColdAct(0)
+        pass
 
 def valveColdAct(exec : bool):
     global out_valve_cold
@@ -260,17 +241,24 @@ def stepperAct(exec : str):
 def linearMotorAct(exec : str):
     global out_motor_linear
     
-    if (exec == 'up'):
+    if(exec == 'up'):
         if(not DEBUG):
             out_motor_linear.forward()
-    else:
+            print('up')
+            
+    elif(exec == 'down'):
         if(not DEBUG):
             out_motor_linear.backward()
+            print('down')
     
-    if(not DEBUG):
-        out_motor_linear.stop()
+    else:
+        if(not DEBUG):
+            out_motor_linear.stop()
+            print('stop')
 
-    
+valveColdAct(False)
+valveNormalAct(False)
+pumpMainAct(False)
 
 class ScreenSplash(MDBoxLayout):
     screen_manager = ObjectProperty(None)
@@ -279,7 +267,7 @@ class ScreenSplash(MDBoxLayout):
     def __init__(self, **kwargs):
         super(ScreenSplash, self).__init__(**kwargs)
         Clock.schedule_interval(self.update_progress_bar, .01)
-        Clock.schedule_interval(self.regular_check, .1)
+        Clock.schedule_interval(self.regular_check, 1)
 
     def update_progress_bar(self, *args):
         if (self.ids.progress_bar.value + 1) < 100:
@@ -301,15 +289,20 @@ class ScreenSplash(MDBoxLayout):
 
         # program for reading sensor end control system algorithm
         if(not DEBUG):
-            levelMainTank = mainTank.read_register(5,0,3,False)
-            levelColdTank = coldTank.read_register(5,0,3,False)
-            levelNormalTank = normalTank.read_register(5,0,3,False)
-        
-            levelCheck(
-                levelColdTank=levelColdTank,
-                levelNormalTank=levelNormalTank,
-                levelMainTank= levelNormalTank
-            )
+            try:
+                levelMainTank = mainTank.read_register(5,0,3,False)
+                time.sleep(.1)
+                levelColdTank = coldTank.read_register(0x0101,0,3,False)
+                time.sleep(.1)
+                levelNormalTank = normalTank.read_register(0x0101,0,3,False)
+            
+                levelCheck(
+                    levelColdTank=levelColdTank,
+                    levelNormalTank=levelNormalTank,
+                    levelMainTank= levelNormalTank
+                )
+            except Exception as e:
+                print(e)
         # pass
 
 class ScreenChooseProduct(MDBoxLayout):
@@ -337,17 +330,6 @@ class ScreenChooseProduct(MDBoxLayout):
         global levelColdTank, levelMainTank, levelNormalTank, cold
 
         # program for reading sensor end control system algorithm
-        if(not DEBUG):
-            levelMainTank = mainTank.read_register(5,0,3,False)
-            levelColdTank = coldTank.read_register(5,0,3,False)
-            levelNormalTank = normalTank.read_register(5,0,3,False)
-
-            levelCheck(
-                levelColdTank=levelColdTank,
-                levelNormalTank=levelNormalTank,
-                levelMainTank= levelNormalTank
-            )
-
         # program for displaying IO condition
         if (cold):
             self.ids.bt_cold.md_bg_color = "#3C9999"
@@ -518,31 +500,35 @@ class ScreenMaintenance(MDBoxLayout):
         global pump_main
 
         if (pump_main):
-            pumpMainAct(True)
             pump_main = False
-        else:
             pumpMainAct(False)
+            
+        else:
             pump_main = True
+            pumpMainAct(True)
 
     def act_pump_cold(self):
         global pump_cold
 
         if (pump_cold):
-            pumpColdAct(True)
             pump_cold = False
-        else:
             pumpColdAct(False)
+            
+        else:
             pump_cold = True
+            pumpColdAct(True)     
 
     def act_pump_normal(self):
         global pump_normal
 
         if (pump_normal):
-            pumpNormalAct(True)
             pump_normal = False
-        else:
             pumpNormalAct(False)
+            
+        else:
             pump_normal = True
+            pumpNormalAct(True)
+            
 
     def act_open(self):
         global stepper_open_close, in_limit_opened
@@ -584,7 +570,6 @@ class ScreenMaintenance(MDBoxLayout):
 
     def act_up(self):
         global linear_motor
-
         linearMotorAct('up')
 
         # linear_motor is boolean, if linear motor on it can change GPIO condition to move up or down
@@ -593,11 +578,14 @@ class ScreenMaintenance(MDBoxLayout):
 
     def act_down(self):
         global linear_motor
-
         linearMotorAct('down')
 
         # if (linear_motor):
         #     pass
+
+    def act_stop(self):
+        global linear_motor
+        linearMotorAct('stop')
 
     def exit(self):
         self.screen_manager.current = 'screen_choose_product'
@@ -608,17 +596,6 @@ class ScreenMaintenance(MDBoxLayout):
         self.ids.lb_level_main.text = str(levelMainTank)
         self.ids.lb_level_cold.text = str(levelColdTank)
         self.ids.lb_level_normal.text = str(levelNormalTank)
-
-        if (not DEBUG):
-            levelMainTank = mainTank.read_register(5,0,3,False)
-            levelColdTank = coldTank.read_register(5,0,3,False)
-            levelNormalTank = normalTank.read_register(5,0,3,False)
-
-            levelCheck(
-                levelColdTank=levelColdTank,
-                levelNormalTank=levelNormalTank,
-                levelMainTank= levelNormalTank
-            )
 
         # program for displaying IO condition        
         if (valve_cold):
@@ -662,9 +639,9 @@ class WaterDispenserMachineApp(MDApp):
         self.theme_cls.primary_palette = "BlueGray"
         self.theme_cls.accent_palette = "Blue"
         self.icon = 'asset/Icon_Logo.png'
-        # Window.fullscreen = 'auto'
-        # Window.borderless = True
-        Window.size = 1080, 640
+        Window.fullscreen = 'auto'
+        Window.borderless = True
+        # Window.size = 1080, 640
         # Window.allow_screensaver = True
 
         screen = Builder.load_file('main.kv')
