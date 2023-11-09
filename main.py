@@ -16,10 +16,16 @@ from datetime import datetime
 from pathlib import Path
 from kivy.properties import ObjectProperty
 from kivy.properties import StringProperty
+
+from gpiozero import Button
+from gpiozero import RotaryEncoder
+from gpiozero import DigitalInputDevice
+from gpiozero import Motor
+from gpiozero import DigitalOutputDevice
+from gpiozero import PWMOutputDevice
 import minimalmodbus
 import time
 import qrcode
-
 
 qr = qrcode.QRCode(
     version=1,
@@ -60,36 +66,7 @@ colors = {
 
 DEBUG = True
 
-from gpiozero import Button
-from gpiozero import RotaryEncoder
-from gpiozero import DigitalInputDevice
-from gpiozero import Motor
-from gpiozero import DigitalOutputDevice
-
-if(not DEBUG):
-    in_sensor_proximity = Button(17)
-    in_sensor_flow = DigitalInputDevice(19)
-    in_limit_opened = Button(27)
-    in_limit_closed = Button(22)
-
-    out_valve_cold = DigitalOutputDevice(20)
-    out_valve_normal = DigitalOutputDevice(26)
-    out_pump_main = DigitalOutputDevice(21)
-    out_pump_cold = DigitalOutputDevice(5)
-    out_pump_normal = DigitalOutputDevice(6)
-    out_stepper_enable = DigitalOutputDevice(23)
-    out_stepper_direction = DigitalOutputDevice(24)
-    out_stepper_pulse = DigitalOutputDevice(12)
-    out_motor_linear = Motor(16, 9)
-
-valve_cold = False
-valve_normal = False
-pump_main = False
-pump_cold = False
-pump_normal = False
-linear_motor = False
-stepper_open_close = False
-
+# modbus rtu communication paramater setup
 BAUDRATE = 9600
 BYTESIZES = 8
 STOPBITS = 1
@@ -97,18 +74,14 @@ TIMEOUT = 0.5
 PARITY = minimalmodbus.serial.PARITY_NONE
 MODE = minimalmodbus.MODE_RTU
 
-pulsePerLiter = 450
-pulsePerMiliLiter = 450/1000
+if(not DEBUG):
+    # input declaration 
+    in_sensor_proximity = Button(17)
+    in_sensor_flow = DigitalInputDevice(19)
+    in_limit_opened = Button(27)
+    in_limit_closed = Button(22)
 
-cold = False
-product = 0
-pulse = 0
-levelMainTank = 0
-levelNormalTank = 0
-levelColdTank = 0
-# in_sensor_flow.when_activated(lambda : measure)
-
-if (not DEBUG):
+    # modbus communication of sensor declaration 
     mainTank = minimalmodbus.Instrument('/dev/ttyUSB0', 1)
     mainTank.serial.baudrate = BAUDRATE
     mainTank.serial.bytesize = BYTESIZES
@@ -136,86 +109,50 @@ if (not DEBUG):
     normalTank.mode = MODE
     normalTank.clear_buffers_before_each_transaction = True
 
-def measure():
+    # output declaration 
+    out_valve_cold = DigitalOutputDevice(20)
+    out_valve_normal = DigitalOutputDevice(26)
+    out_pump_main = DigitalOutputDevice(21)
+    out_pump_cold = DigitalOutputDevice(5)
+    out_pump_normal = DigitalOutputDevice(6)
+    out_stepper_enable = DigitalOutputDevice(23)
+    out_stepper_direction = DigitalOutputDevice(24)
+    out_stepper_pulse = PWMOutputDevice(12)
+    out_motor_linear = Motor(16, 9)
+
+    out_valve_cold.off()
+    out_valve_normal.off()
+    out_pump_main.off()
+    out_pump_normal.off()
+    out_pump_normal.off()
+    out_motor_linear.stop()
+
+valve_cold = False
+valve_normal = False
+pump_main = False
+pump_cold = False
+pump_normal = False
+linear_motor = False
+stepper_open = False
+
+pulsePerLiter = 450
+pulsePerMiliLiter = 450/1000
+
+cold = False
+product = 0
+pulse = 0
+levelMainTank = 0
+levelNormalTank = 0
+levelColdTank = 0
+maxMainTank = 1500
+maxNormalTank = 500
+maxColdTank = 500
+
+def countPulse():
     global pulse
     pulse +=1
 
-def levelCheck(levelMainTank, levelColdTank, levelNormalTank):
-    
-    if(levelMainTank >=500.0):
-      #send request to server
-        print('request for refill')
-    
-    if(levelColdTank >=50.0):            
-        #pumpColdAct(1)
-        pass
-        
-    if(levelNormalTank >=50.0):
-        #pumpNormalAct(1)
-        pass
-
-    if(levelColdTank <=20.0):
-        #pumpColdAct(0)
-        pass
-    
-    if(levelNormalTank <=20.0):
-        #pumpColdAct(0)
-        pass
-
-def valveColdAct(exec : bool):
-    global out_valve_cold
-    if (not exec):
-        if(not DEBUG):
-            out_valve_cold.on()
-        print('valve 1 on')
-    else :
-        if(not DEBUG):
-            out_valve_cold.off()
-        print('valve 1 off')
-
-def valveNormalAct(exec : bool):
-    global out_valve_normal
-    if (not exec):
-        if(not DEBUG):
-            out_valve_normal.on()
-        print('valve 2 on')
-    else :
-        if(not DEBUG):
-            out_valve_normal.off()
-        print('valve 2 off')
-
-def pumpMainAct(exec : bool):
-    global out_pump_main
-    if (not exec):
-        if(not DEBUG):
-            out_pump_main.on()
-        print('pump main on')
-    else :
-        if(not DEBUG):
-            out_pump_main.off()
-        print('pump main off')
-
-def pumpColdAct(exec : bool):
-    global out_pump_cold
-    if (exec):
-        if(not DEBUG):
-            out_pump_cold.on()
-        print('pump cold on')
-    else :
-        if(not DEBUG):
-            out_pump_cold.off()
-        print('pump cold off')
-
-def pumpNormalAct(exec : bool):
-    global out_pump_normal
-    if (exec):
-        if(not DEBUG):
-            out_pump_normal.on()
-        print('pump normal on')
-    else :
-        if(not DEBUG):
-            out_pump_normal.off()
-        print('pump normal off')
+in_sensor_flow.when_activated = countPulse 
 
 def stepperAct(exec : str):
     global out_stepper_enable, out_stepper_direction ,out_stepper_pulse, in_limit_opened, in_limit_closed
@@ -237,28 +174,6 @@ def stepperAct(exec : str):
                 out_stepper_pulse.value = 0.5
             
             out_stepper_pulse.value = 0
-
-def linearMotorAct(exec : str):
-    global out_motor_linear
-    
-    if(exec == 'up'):
-        if(not DEBUG):
-            out_motor_linear.forward()
-            print('up')
-            
-    elif(exec == 'down'):
-        if(not DEBUG):
-            out_motor_linear.backward()
-            print('down')
-    
-    else:
-        if(not DEBUG):
-            out_motor_linear.stop()
-            print('stop')
-
-valveColdAct(False)
-valveNormalAct(False)
-pumpMainAct(False)
 
 class ScreenSplash(MDBoxLayout):
     screen_manager = ObjectProperty(None)
@@ -285,25 +200,46 @@ class ScreenSplash(MDBoxLayout):
             return False
 
     def regular_check(self, *args):
-        global levelColdTank, levelMainTank, levelNormalTank
+        global levelColdTank, levelMainTank, levelNormalTank, maxColdTank, maxMainTank, maxNormalTank, out_pump_main, out_valve_cold, out_valve_normal
 
         # program for reading sensor end control system algorithm
         if(not DEBUG):
             try:
-                levelMainTank = mainTank.read_register(5,0,3,False)
+                read = mainTank.read_register(5,0,3,False)
+                levelMainTank = read * 100 / maxMainTank
                 time.sleep(.1)
-                levelColdTank = coldTank.read_register(0x0101,0,3,False)
+                read = coldTank.read_register(0x0101,0,3,False)
+                levelColdTank = read * 100 / maxColdTank
                 time.sleep(.1)
-                levelNormalTank = normalTank.read_register(0x0101,0,3,False)
-            
-                levelCheck(
-                    levelColdTank=levelColdTank,
-                    levelNormalTank=levelNormalTank,
-                    levelMainTank= levelNormalTank
-                )
+                read = normalTank.read_register(0x0101,0,3,False)
+                levelNormalTank = read * 100 / maxNormalTank    
+                
             except Exception as e:
                 print(e)
-        # pass
+        
+        if (levelMainTank <= 40):
+            print("send request to server")
+                
+        if (levelColdTank <=40):
+            if (not DEBUG) : 
+                out_valve_cold.on()
+                out_pump_main.on()
+        
+        if (levelNormalTank <=40):
+            if (not DEBUG) : 
+                out_valve_normal.on()
+                out_pump_main.on()
+
+        if (levelColdTank >= 85):
+            if (not DEBUG) : 
+                out_valve_cold.off()
+                out_pump_main.off()
+
+        if (levelNormalTank >= 85):
+            if (not DEBUG) : 
+                out_valve_normal.off()
+                out_pump_main.off()
+
 
 class ScreenChooseProduct(MDBoxLayout):
     screen_manager = ObjectProperty(None)
@@ -327,9 +263,6 @@ class ScreenChooseProduct(MDBoxLayout):
         self.screen_manager.current = 'screen_info'
 
     def regular_check(self, *args):
-        global levelColdTank, levelMainTank, levelNormalTank, cold
-
-        # program for reading sensor end control system algorithm
         # program for displaying IO condition
         if (cold):
             self.ids.bt_cold.md_bg_color = "#3C9999"
@@ -392,52 +325,63 @@ class ScreenChoosePayment(MDBoxLayout):
 
 class ScreenOperate(MDBoxLayout):
     screen_manager = ObjectProperty(None)
+    fill = False
 
     def __init__(self, **kwargs):       
         super(ScreenOperate, self).__init__(**kwargs)
+        Clock.schedule_interval(self.regular_check, .1)
 
     def move_up(self):
-        linearMotorAct('up')
+        global out_motor_linear
+        if (not DEBUG) : out_motor_linear.forward()
         print("move up")
         toast("moving tumbler base up")
 
     def move_down(self):
-        linearMotorAct('down')
+        global out_motor_linear
+        if (not DEBUG) : out_motor_linear.backward()
         print("move down")
         toast("moving tumbler base down")
 
     def fill_start(self):
-        global pulse, product, pulsePerMiliLiter
+        global pulse
+        if (not DEBUG and not self.fill) :
+            pulse = 0 
+            self.fill = true
 
-        if(not DEBUG):
-            stepperAct('open')
-        pulse = 0
-
-        while pulse <= pulsePerMiliLiter*product:
-            if (cold):
-              if(not DEBUG):
-                pumpColdAct(1)
-            else:
-              if(not DEBUG):
-                pumpNormalAct(1)
-        
-        if(not DEBUG):
-            pumpColdAct(0)
-            pumpNormalAct(0)
-            stepperAct('close')
-
-        print(cold)
         print("fill start")
         toast("water filling is started")
 
     def fill_stop(self):
+        global out_pump_cold, out_pump_normal
         if(not DEBUG):
-            pumpColdAct(0)
-            pumpNormalAct(0)
+            out_pump_cold.off()
+            out_pump_normal.off()
+            self.fill = False
 
         print("fill stop")
         toast("thank you for decreasing plastic bottle trash by buying our product")
         self.screen_manager.current = 'screen_choose_product'
+
+    def regular_check(self):
+        global pulse, product, pulsePerMiliLiter, in_limit_closed, in_limit_opened, in_sensor_proximity, out_pump_cold, out_pump_normal, stepperAct
+
+        if (self.fill):
+            if (pulse <= pulsePerMiliLiter*product):
+                if (in_sensor_proximity):
+                    if (not in_limit_opened) : stepperAct('open')
+                    out_pump_cold.on() if (cold) else out_pump_normal.on()
+                else :
+                    out_pump_cold.off()
+                    out_pump_normal.off()
+                    toast("please put your tumbler")
+
+            else :
+                out_pump_cold.off()
+                out_pump_normal.off()
+                stepperAct('close')
+                self.fill = False
+                toast("thank you for decreasing plastic bottle trash by buying our product")
 
 class ScreenQRPayment(MDBoxLayout):
     screen_manager = ObjectProperty(None)
@@ -478,114 +422,106 @@ class ScreenMaintenance(MDBoxLayout):
         Clock.schedule_interval(self.regular_check, .1)
 
     def act_valve_cold(self):
-        global valve_cold
-
+        global valve_cold, out_valve_cold
         if (valve_cold):
             valve_cold = False 
-            valveColdAct(False)
+            if (not DEBUG) : out_valve_cold.off()
         else:
             valve_cold = True 
-            valveColdAct(True)
+            if (not DEBUG) : out_valve_cold.on()
 
     def act_valve_normal(self):
-        global valve_normal
+        global valve_normal, out_valve_normal
         if (valve_normal):
             valve_normal = False 
-            valveNormalAct(False)
+            if (not DEBUG) : out_valve_normal.off()
         else:
             valve_normal = True 
-            valveNormalAct(True)
+            if (not DEBUG) : out_valve_normal.on()
 
     def act_pump_main(self):
-        global pump_main
-
+        global pump_main, out_pump_main
         if (pump_main):
-            pump_main = False
-            pumpMainAct(False)
-            
+            pump_main = False            
+            if (not DEBUG) : out_pump_main.off()
         else:
             pump_main = True
-            pumpMainAct(True)
+            if (not DEBUG) : out_pump_main.on()
 
     def act_pump_cold(self):
-        global pump_cold
-
+        global pump_cold, out_pump_cold
         if (pump_cold):
             pump_cold = False
-            pumpColdAct(False)
-            
+            if (not DEBUG) : out_pump_cold.off()
         else:
-            pump_cold = True
-            pumpColdAct(True)     
+            pump_cold = True 
+            if (not DEBUG) : out_pump_cold.on()
 
     def act_pump_normal(self):
-        global pump_normal
-
+        global pump_normal, out_pump_normal
         if (pump_normal):
             pump_normal = False
-            pumpNormalAct(False)
-            
+            if (not DEBUG) : out_pump_normal.off()
         else:
             pump_normal = True
-            pumpNormalAct(True)
-            
+            if (not DEBUG) : out_pump_normal.on()
 
     def act_open(self):
-        global stepper_open_close, in_limit_opened
+        global stepper_open, in_limit_opened
 
-        # stepper_open_close is boolean, if stepper_open_close on it can change GPIO condition to move open or close
-        # if (stepper_open_close):
+        # stepper_open is boolean, if stepper_open on it can change GPIO condition to move open or close
+        # if (stepper_open):
         #     stepperAct('open')
-        #     stepper_open_close = False
+        #     stepper_open = False
         # else:
         #     stepperAct('close')
-        #     stepper_open_close = True
+        #     stepper_open = True
         # if not lsOpen
         try:
             if (not in_limit_opened) :
-                stepperAct('open')
-                stepper_open_close = False
-        except:
-            toast("error")
-
-
+                if (not DEBUG) : stepperAct('open')
+            stepper_open = True
+        except Exception as e:
+            toast(e)
 
     def act_close(self):
-        global stepper_open_close, in_limit_closed
+        global stepper_open, in_limit_closed
 
-        # stepper_open_close is boolean, if stepper_open_close on it can change GPIO condition to move open or close
-        # if (stepper_open_close):
+        # stepper_open is boolean, if stepper_open on it can change GPIO condition to move open or close
+        # if (stepper_open):
         #     stepperAct('open')
-        #     stepper_open_close = False
+        #     stepper_open = False
         # else:
         #     stepperAct('close')
-        #     stepper_open_close = True
+        #     stepper_open = True
 
         try:
             if (not in_limit_closed) :
-                stepperAct('close')
-                stepper_open_close = True
-        except:
-            toast("error")
+                if (not DEBUG) : stepperAct('close')
+            stepper_open = False
+        except Exception as e:
+            toast(e)
 
     def act_up(self):
-        global linear_motor
-        linearMotorAct('up')
+        global linear_motor, out_motor_linear
+        if (not DEBUG) : out_motor_linear.forward()
+        toast("tumbler base is going up")
 
         # linear_motor is boolean, if linear motor on it can change GPIO condition to move up or down
         # if (linear_motor):
         #     pass
 
     def act_down(self):
-        global linear_motor
-        linearMotorAct('down')
+        global linear_motor, out_motor_linear
+        if (not DEBUG) : out_motor_linear.backward()
+        toast("tumbler base is going down")
 
         # if (linear_motor):
         #     pass
 
     def act_stop(self):
-        global linear_motor
-        linearMotorAct('stop')
+        global linear_motor, out_motor_linear
+        if (not DEBUG) : out_motor_linear.stop()
 
     def exit(self):
         self.screen_manager.current = 'screen_choose_product'
@@ -593,9 +529,9 @@ class ScreenMaintenance(MDBoxLayout):
     def regular_check(self, *args):
         global levelColdTank, levelMainTank, levelNormalTank
 
-        self.ids.lb_level_main.text = str(levelMainTank)
-        self.ids.lb_level_cold.text = str(levelColdTank)
-        self.ids.lb_level_normal.text = str(levelNormalTank)
+        self.ids.lb_level_main.text = str(levelMainTank) + '%'
+        self.ids.lb_level_cold.text = str(levelColdTank) + '%'
+        self.ids.lb_level_normal.text = str(levelNormalTank) + '%'
 
         # program for displaying IO condition        
         if (valve_cold):
@@ -623,12 +559,12 @@ class ScreenMaintenance(MDBoxLayout):
         else:
             self.ids.bt_pump_normal.md_bg_color = "#09343C"
 
-        if (stepper_open_close):
+        if (stepper_open):
             self.ids.bt_open.md_bg_color = "#3C9999"
-            self.ids.bt_close.md_bg_color = "#3C9999"
+            self.ids.bt_close.md_bg_color = "#09343C"
         else:
             self.ids.bt_open.md_bg_color = "#09343C"
-            self.ids.bt_close.md_bg_color = "#09343C"
+            self.ids.bt_close.md_bg_color = "#3C9999"
 
 class WaterDispenserMachineApp(MDApp):
     def __init__(self, **kwargs):
