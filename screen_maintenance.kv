@@ -163,6 +163,7 @@
 			size_hint: 0.25, 0.08
 			pos_hint: {"center_x": 0.1, "center_y": .15}
 			on_press: root.act_up()
+			on_release: root.act_stop()
 
 		MDFillRoundFlatIconButton:
 			id: bt_down
@@ -172,6 +173,7 @@
 			size_hint: 0.25, 0.08
 			pos_hint: {"center_x": 0.1, "center_y": .06}
 			on_press: root.act_down()
+			on_release: root.act_stop()
 
 		MDFillRoundFlatIconButton:
 			id: bt_exit

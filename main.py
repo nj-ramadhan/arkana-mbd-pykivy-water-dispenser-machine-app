@@ -152,7 +152,7 @@ def countPulse():
     global pulse
     pulse +=1
 
-in_sensor_flow.when_activated = countPulse 
+if (not DEBUG) : in_sensor_flow.when_activated = countPulse 
 
 def stepperAct(exec : str):
     global out_stepper_enable, out_stepper_direction ,out_stepper_pulse, in_limit_opened, in_limit_closed
@@ -477,12 +477,12 @@ class ScreenMaintenance(MDBoxLayout):
         #     stepperAct('close')
         #     stepper_open = True
         # if not lsOpen
-        try:
+        if (not DEBUG) : 
             if (not in_limit_opened) :
-                if (not DEBUG) : stepperAct('open')
-            stepper_open = True
-        except Exception as e:
-            toast(e)
+                stepperAct('open')
+
+        stepper_open = True
+        
 
     def act_close(self):
         global stepper_open, in_limit_closed
@@ -495,15 +495,15 @@ class ScreenMaintenance(MDBoxLayout):
         #     stepperAct('close')
         #     stepper_open = True
 
-        try:
+        if (not DEBUG) : 
             if (not in_limit_closed) :
-                if (not DEBUG) : stepperAct('close')
-            stepper_open = False
-        except Exception as e:
-            toast(e)
+                stepperAct('close')
+                
+        stepper_open = False
 
     def act_up(self):
         global linear_motor, out_motor_linear
+        self.ids.bt_up.md_bg_color = "#3C9999"
         if (not DEBUG) : out_motor_linear.forward()
         toast("tumbler base is going up")
 
@@ -513,6 +513,7 @@ class ScreenMaintenance(MDBoxLayout):
 
     def act_down(self):
         global linear_motor, out_motor_linear
+        self.ids.bt_down.md_bg_color = "#3C9999"
         if (not DEBUG) : out_motor_linear.backward()
         toast("tumbler base is going down")
 
@@ -521,6 +522,8 @@ class ScreenMaintenance(MDBoxLayout):
 
     def act_stop(self):
         global linear_motor, out_motor_linear
+        self.ids.bt_up.md_bg_color = "#09343C"
+        self.ids.bt_down.md_bg_color = "#09343C"
         if (not DEBUG) : out_motor_linear.stop()
 
     def exit(self):
