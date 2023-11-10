@@ -492,7 +492,7 @@ class ScreenOperate(MDBoxLayout):
         toast("thank you for decreasing plastic bottle trash by buying our product")
         self.screen_manager.current = 'screen_choose_product'
 
-    def regular_check(self):
+    def regular_check(self, *args):
         global pulse, product, pulsePerMiliLiter, in_limit_closed, in_limit_opened, in_sensor_proximity, out_pump_cold, out_pump_normal, stepperAct
 
         if (self.fill):
