@@ -26,6 +26,7 @@ from gpiozero import PWMOutputDevice
 import minimalmodbus
 import time
 import qrcode
+import requests
 
 qr = qrcode.QRCode(
     version=1,
@@ -65,6 +66,18 @@ colors = {
 }
 
 DEBUG = True
+
+SERVER = 'https://app.kickyourplast.com/api/'
+MACHINE_CODE = '001'
+
+if (DEBUG) :
+    try :
+        r = requests.patch(SERVER + 'machines/' + MACHINE_CODE, data={
+            'stock' : str(levelMainTank)+'%',
+            'status' : 'not_ready'            
+        })
+    except Exception as e:
+        print(e)
 
 # modbus rtu communication paramater setup
 BAUDRATE = 9600
@@ -217,8 +230,25 @@ class ScreenSplash(MDBoxLayout):
             except Exception as e:
                 print(e)
         
+        # Tank mechanism
         if (levelMainTank <= 40):
-            print("send request to server")
+            if (not DEBUG) :
+                try :
+                    r = requests.patch(SERVER + 'machines/' + MACHINE_CODE, data={
+                        'stock' : str(levelMainTank)+'%',
+                        'status' : 'not_ready'
+                    })
+                except Exception as e:
+                    print(e)
+                print('sending request to server')
+        else:
+            try :
+                 r = requests.patch(SERVER + 'machines/' + MACHINE_CODE, data={
+                    'stock' : str(levelMainTank)+'%',
+                    'status' : 'ready'
+                })
+            except Exception as e:                    
+                print(e)
                 
         if (levelColdTank <=40):
             if (not DEBUG) : 
@@ -240,6 +270,16 @@ class ScreenSplash(MDBoxLayout):
                 out_valve_normal.off()
                 out_pump_main.off()
 
+        # scan kupon QR CODE
+        # if (something):
+        #     try :
+        #         r = requests.post(SERVER + 'transactions/' + KODE_KUPON + '/used_machine', data={
+        #             'machine_code' : MACHINE_CODE
+        #         })
+
+        #         toast(r.json().message)
+        #     except Exception as e:
+        #         print(e)
 
 class ScreenChooseProduct(MDBoxLayout):
     screen_manager = ObjectProperty(None)
@@ -247,6 +287,13 @@ class ScreenChooseProduct(MDBoxLayout):
     def __init__(self, **kwargs):
         super(ScreenChooseProduct, self).__init__(**kwargs)
         Clock.schedule_interval(self.regular_check, .1)
+        
+        try :
+            r = requests.get(SERVER + 'products', {all : True})
+            print(r.json()['data'])
+            self.products = r.json()['data']
+        except Exception as e:
+            print(e)
 
     def cold_mode(self, value):
         global cold
@@ -283,6 +330,18 @@ class ScreenChoosePayment(MDBoxLayout):
         print(method)
         try:
             if(method=="GOPAY"):
+                # ..... create transaction
+                # self.create_transaction(
+                #     machine_code=MACHINE_CODE,
+                #     method=self.method,
+                #     product_id=self.product.id,
+                #     product_size=self.product_size,
+                #     qty=self.qty,
+                #     price=self.price,
+                #     product_type=self.product_type,
+                #     phone=self.phone
+                # )
+
                 time.sleep(0.1)
                 qr.add_data("insert data here, it is gopay now")
                 qr.make(fit=True)
@@ -292,9 +351,24 @@ class ScreenChoosePayment(MDBoxLayout):
 
                 self.screen_manager.current = 'screen_qr_payment'
                 print("payment gopay")
+
+                # .... scheduling payment check
+                # Clock.schedule_interval(self.payment_check, 1)
                 toast("successfully pay with GOPAY")
 
             elif(method=="ShopeePay"):
+                # ..... create transaction
+                # self.create_transaction(
+                #     machine_code=MACHINE_CODE,
+                #     method=self.method,
+                #     product_id=self.product.id,
+                #     product_size=self.product_size,
+                #     qty=self.qty,
+                #     price=self.price,
+                #     product_type=self.product_type,
+                #     phone=self.phone
+                # )
+
                 time.sleep(0.1)
                 qr.add_data("insert data here, it is ShopeePay now")
                 qr.make(fit=True)
@@ -304,9 +378,24 @@ class ScreenChoosePayment(MDBoxLayout):
 
                 self.screen_manager.current = 'screen_qr_payment'
                 print("payment ovo")
+
+                # .... scheduling payment check
+                # Clock.schedule_interval(self.payment_check, 1)
                 toast("successfully pay with ShopeePay")
 
             elif(method=="QRIS"):
+                # ..... create transaction
+                # self.create_transaction(
+                #     machine_code=MACHINE_CODE,
+                #     method=self.method,
+                #     product_id=self.product.id,
+                #     product_size=self.product_size,
+                #     qty=self.qty,
+                #     price=self.price,
+                #     product_type=self.product_type,
+                #     phone=self.phone
+                # )
+                
                 time.sleep(0.1)
                 qr.add_data("insert data here, it is QRIS now")
                 qr.make(fit=True)
@@ -316,9 +405,49 @@ class ScreenChoosePayment(MDBoxLayout):
 
                 self.screen_manager.current = 'screen_qr_payment'
                 print("payment qris")
+
+                # .... scheduling payment check
+                # Clock.schedule_interval(self.payment_check, 1)
                 toast("successfully pay with QRIS")
         except:
             print("payment error")
+
+    def create_transaction(self, method, machine_code, product_id, product_size, qty, price, product_type, phone=''):
+        try :
+            r = requests.post(SERVER + 'machine_transactions', json={
+                "payment_method": method,
+                "machine_code": machine_code,
+                "phone": phone,
+                "items": [
+                    {
+                        "product_id": product_id,
+                        "qty": qty,
+                        "size": product_size,
+                        "unit_price": price,
+                        "drink_type": product_type
+                    }
+                ]
+            })
+            print(r.json()['data'])
+        except Exception as e:
+            print(e)
+    
+    def payment_check(self):
+        try :
+            r = requests.get(SERVER + 'machine_transactions/' + self.transaction_id)
+            
+            if (r.json()['data']['payment_status'] == 'success'):
+                toast('payment success')
+                self.screen_manager.current = 'screen_operate'
+                Clock.unschedule(self.payment_check)
+
+            elif (r.json()['data']['payment_status'] != 'pending'):
+                toast("payment failed")
+                self.screen_manager.current = 'screen_choose_product'
+                Clock.unschedule(self.payment_check)
+                
+        except Exception as e:
+            print(e)
 
     def screen_choose_product(self):
         self.screen_manager.current = 'screen_choose_product'
