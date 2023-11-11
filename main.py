@@ -160,6 +160,7 @@ levelColdTank = 0
 maxMainTank = 1500
 maxNormalTank = 500
 maxColdTank = 500
+qrSource = 'qr_payment.png'
 
 def countPulse():
     global pulse
@@ -325,13 +326,13 @@ class ScreenChoosePayment(MDBoxLayout):
         super(ScreenChoosePayment, self).__init__(**kwargs)
 
     def pay(self, method):
-        global qr
+        global qr, qrSource
 
         print(method)
         try:
             if(method=="GOPAY"):
                 # ..... create transaction
-                # self.create_transaction(
+                # qrSource = self.create_transaction(
                 #     machine_code=MACHINE_CODE,
                 #     method=self.method,
                 #     product_id=self.product.id,
@@ -429,6 +430,7 @@ class ScreenChoosePayment(MDBoxLayout):
                 ]
             })
             print(r.json()['data'])
+            return r.json()['data']['payment_response_parameter']['actions'][0]['url']
         except Exception as e:
             print(e)
     
@@ -476,7 +478,7 @@ class ScreenOperate(MDBoxLayout):
         global pulse
         if (not DEBUG and not self.fill) :
             pulse = 0 
-            self.fill = true
+            self.fill = True
 
         print("fill start")
         toast("water filling is started")
@@ -520,8 +522,9 @@ class ScreenQRPayment(MDBoxLayout):
         Clock.schedule_interval(self.regular_check, 1)
         
     def regular_check(self, *args):
-        self.ids.image_qr_payment.source = 'qr_payment.png'
-        self.ids.image_qr_payment.reload()
+        global qrSource
+        self.ids.image_qr_payment.source = qrSource
+        # self.ids.image_qr_payment.reload()
         # pass
 
     def cancel(self):
