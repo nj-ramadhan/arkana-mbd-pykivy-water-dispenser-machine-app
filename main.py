@@ -65,10 +65,11 @@ colors = {
     },
 }
 
+MAINTENANCE= True
 DEBUG = True
 
 SERVER = 'https://app.kickyourplast.com/api/'
-MACHINE_CODE = '001'
+MACHINE_CODE = 'KYP001'
 
 if (DEBUG) :
     try :
@@ -135,7 +136,7 @@ if(not DEBUG):
 
     out_valve_cold.off()
     out_valve_normal.off()
-    out_pump_main.off()
+    out_pump_main.on()
     out_pump_normal.off()
     out_pump_normal.off()
     out_motor_linear.stop()
@@ -153,6 +154,8 @@ pulsePerMiliLiter = 450/1000
 
 cold = False
 product = 0
+idProduct = 0
+productPrice = 0
 pulse = 0
 levelMainTank = 0
 levelNormalTank = 0
@@ -232,44 +235,45 @@ class ScreenSplash(MDBoxLayout):
                 print(e)
         
         # Tank mechanism
-        if (levelMainTank <= 40):
-            if (not DEBUG) :
+        if (not MAINTENANCE):
+            if (levelMainTank <= 40):
+                if (not DEBUG) :
+                    try :
+                        r = requests.patch(SERVER + 'machines/' + MACHINE_CODE, data={
+                            'stock' : str(levelMainTank)+'%',
+                            'status' : 'not_ready'
+                        })
+                    except Exception as e:
+                        print(e)
+                    print('sending request to server')
+            else:
                 try :
                     r = requests.patch(SERVER + 'machines/' + MACHINE_CODE, data={
                         'stock' : str(levelMainTank)+'%',
-                        'status' : 'not_ready'
+                        'status' : 'ready'
                     })
-                except Exception as e:
+                except Exception as e:                    
                     print(e)
-                print('sending request to server')
-        else:
-            try :
-                 r = requests.patch(SERVER + 'machines/' + MACHINE_CODE, data={
-                    'stock' : str(levelMainTank)+'%',
-                    'status' : 'ready'
-                })
-            except Exception as e:                    
-                print(e)
-                
-        if (levelColdTank <=40):
-            if (not DEBUG) : 
-                out_valve_cold.on()
-                out_pump_main.on()
-        
-        if (levelNormalTank <=40):
-            if (not DEBUG) : 
-                out_valve_normal.on()
-                out_pump_main.on()
+                    
+            if (levelColdTank <=40):
+                if (not DEBUG) : 
+                    out_valve_cold.on()
+                    out_pump_main.off()
+            
+            if (levelNormalTank <=40):
+                if (not DEBUG) : 
+                    out_valve_normal.on()
+                    out_pump_main.off()
 
-        if (levelColdTank >= 85):
-            if (not DEBUG) : 
-                out_valve_cold.off()
-                out_pump_main.off()
+            if (levelColdTank >= 85):
+                if (not DEBUG) : 
+                    out_valve_cold.off()
+                    out_pump_main.on()
 
-        if (levelNormalTank >= 85):
-            if (not DEBUG) : 
-                out_valve_normal.off()
-                out_pump_main.off()
+            if (levelNormalTank >= 85):
+                if (not DEBUG) : 
+                    out_valve_normal.off()
+                    out_pump_main.off()
 
         # scan kupon QR CODE
         # if (something):
@@ -300,12 +304,15 @@ class ScreenChooseProduct(MDBoxLayout):
         global cold
         cold = value
 
-    def choose_payment(self, value):
-        global product
+    def choose_payment(self, size, id, price):
+        global product, idProduct, productPrice
         self.screen_manager.current = 'screen_choose_payment'
-        print(value)
-        product = value
-        print(type(product))
+        product = size
+        idProduct = id
+        productPrice = price
+        print(idProduct,type(idProduct))
+        print(product,type(product))
+        print(productPrice,type(productPrice))
 
     def screen_info(self):
         self.screen_manager.current = 'screen_info'
@@ -326,79 +333,49 @@ class ScreenChoosePayment(MDBoxLayout):
         super(ScreenChoosePayment, self).__init__(**kwargs)
 
     def pay(self, method):
-        global qr, qrSource
+        global qr, qrSource, product, idProduct, cold, productPrice
 
         print(method)
         try:
             if(method=="GOPAY"):
                 # ..... create transaction
-                # qrSource = self.create_transaction(
-                #     machine_code=MACHINE_CODE,
-                #     method=self.method,
-                #     product_id=self.product.id,
-                #     product_size=self.product_size,
-                #     qty=self.qty,
-                #     price=self.price,
-                #     product_type=self.product_type,
-                #     phone=self.phone
-                # )
+                qrSource = self.create_transaction(
+                    machine_code=MACHINE_CODE,
+                    method='gopay',
+                    product_id=idProduct,
+                    product_size=product,
+                    qty=1,
+                    price=productPrice,
+                    product_type="cold" if (cold) else "normal",
+                    # phone=self.phone
+                )
 
-                time.sleep(0.1)
-                qr.add_data("insert data here, it is gopay now")
-                qr.make(fit=True)
-
-                img = qr.make_image(back_color=(255, 255, 255), fill_color=(55, 95, 100))
-                img.save("qr_payment.png")
+                f = open('qr_payment.png', 'wb')
+                f.write(requests.get(qrSource).content)
+                f.close
 
                 self.screen_manager.current = 'screen_qr_payment'
-                print("payment gopay")
+                print("payment qris")
 
                 # .... scheduling payment check
                 # Clock.schedule_interval(self.payment_check, 1)
                 toast("successfully pay with GOPAY")
 
-            elif(method=="ShopeePay"):
-                # ..... create transaction
-                # self.create_transaction(
-                #     machine_code=MACHINE_CODE,
-                #     method=self.method,
-                #     product_id=self.product.id,
-                #     product_size=self.product_size,
-                #     qty=self.qty,
-                #     price=self.price,
-                #     product_type=self.product_type,
-                #     phone=self.phone
-                # )
-
-                time.sleep(0.1)
-                qr.add_data("insert data here, it is ShopeePay now")
-                qr.make(fit=True)
-
-                img = qr.make_image(back_color=(255, 255, 255), fill_color=(55, 95, 100))
-                img.save("qr_payment.png")
-
-                self.screen_manager.current = 'screen_qr_payment'
-                print("payment ovo")
-
-                # .... scheduling payment check
-                # Clock.schedule_interval(self.payment_check, 1)
-                toast("successfully pay with ShopeePay")
-
             elif(method=="QRIS"):
                 # ..... create transaction
-                # self.create_transaction(
-                #     machine_code=MACHINE_CODE,
-                #     method=self.method,
-                #     product_id=self.product.id,
-                #     product_size=self.product_size,
-                #     qty=self.qty,
-                #     price=self.price,
-                #     product_type=self.product_type,
-                #     phone=self.phone
-                # )
+                qrSource = self.create_transaction(
+                    machine_code=MACHINE_CODE,
+                    method='qris',
+                    product_id=idProduct,
+                    product_size=product,
+                    qty=1,
+                    price=productPrice,
+                    product_type="cold" if (cold) else "normal",
+                    # phone=self.phone
+                )
                 
                 time.sleep(0.1)
-                qr.add_data("insert data here, it is QRIS now")
+                qr.add_data(qrSource)
                 qr.make(fit=True)
 
                 img = qr.make_image(back_color=(255, 255, 255), fill_color=(55, 95, 100))
@@ -413,7 +390,7 @@ class ScreenChoosePayment(MDBoxLayout):
         except:
             print("payment error")
 
-    def create_transaction(self, method, machine_code, product_id, product_size, qty, price, product_type, phone=''):
+    def create_transaction(self, method, machine_code, product_id, product_size, qty, price, product_type, phone='-'):
         try :
             r = requests.post(SERVER + 'machine_transactions', json={
                 "payment_method": method,
@@ -429,8 +406,8 @@ class ScreenChoosePayment(MDBoxLayout):
                     }
                 ]
             })
-            print(r.json()['data'])
-            return r.json()['data']['payment_response_parameter']['actions'][0]['url']
+            # print(r.json()['data'])
+            return r.json()['data']['payment_response_parameter']['qr_string'] if (method == 'qris') else r.json()['data']['payment_response_parameter']['actions'][0]['url']
         except Exception as e:
             print(e)
     
@@ -522,10 +499,9 @@ class ScreenQRPayment(MDBoxLayout):
         Clock.schedule_interval(self.regular_check, 1)
         
     def regular_check(self, *args):
-        global qrSource
-        self.ids.image_qr_payment.source = qrSource
-        # self.ids.image_qr_payment.reload()
-        # pass
+        self.ids.image_qr_payment.source = 'qr_payment.png'
+        self.ids.image_qr_payment.reload()
+        pass
 
     def cancel(self):
         self.screen_manager.current = 'screen_choose_product'
@@ -575,10 +551,10 @@ class ScreenMaintenance(MDBoxLayout):
         global pump_main, out_pump_main
         if (pump_main):
             pump_main = False            
-            if (not DEBUG) : out_pump_main.off()
+            if (not DEBUG) : out_pump_main.on()
         else:
             pump_main = True
-            if (not DEBUG) : out_pump_main.on()
+            if (not DEBUG) : out_pump_main.off()
 
     def act_pump_cold(self):
         global pump_cold, out_pump_cold
