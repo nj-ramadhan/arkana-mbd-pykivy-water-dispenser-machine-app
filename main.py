@@ -16,6 +16,8 @@ from datetime import datetime
 from pathlib import Path
 from kivy.properties import ObjectProperty
 from kivy.properties import StringProperty
+from gtts import gTTS
+import playsound
 
 from gpiozero import Button
 from gpiozero import RotaryEncoder
@@ -131,7 +133,7 @@ if(not DEBUG):
     out_pump_normal = DigitalOutputDevice(6)
     out_stepper_enable = DigitalOutputDevice(23)
     out_stepper_direction = DigitalOutputDevice(24)
-    out_stepper_pulse = PWMOutputDevice(12)
+    out_stepper_pulse = PWMOutputDevice(12, frequency=20)
     out_motor_linear = Motor(16, 9)
 
     out_valve_cold.off()
@@ -164,6 +166,12 @@ maxMainTank = 1500
 maxNormalTank = 500
 maxColdTank = 500
 qrSource = 'qr_payment.png'
+
+def speak(text):
+    tts = gTTS(text=text, lang='id', slow=False)
+    filename = 'voice.mp3'
+    tts.save(filename)
+    playsound.playsound(filename)
 
 def countPulse():
     global pulse
@@ -355,11 +363,12 @@ class ScreenChoosePayment(MDBoxLayout):
                 f.close
 
                 self.screen_manager.current = 'screen_qr_payment'
-                print("payment qris")
+                # print("payment qris")
 
                 # .... scheduling payment check
                 # Clock.schedule_interval(self.payment_check, 1)
-                toast("successfully pay with GOPAY")
+                toast("Silahkan lakukan pembayaran, tunggu sesaat kami melakukan verifikasi")
+                speak("pembayaran melalui gopay dipilih, silahkan scan kode QR yang tampil dilayar pada aplikasi gojek Anda")
 
             elif(method=="QRIS"):
                 # ..... create transaction
@@ -382,11 +391,14 @@ class ScreenChoosePayment(MDBoxLayout):
                 img.save("qr_payment.png")
 
                 self.screen_manager.current = 'screen_qr_payment'
-                print("payment qris")
+                # print("payment qris")
 
                 # .... scheduling payment check
                 # Clock.schedule_interval(self.payment_check, 1)
-                toast("successfully pay with QRIS")
+                # toast("successfully pay with QRIS")
+                toast("Silahkan lakukan pembayaran, tunggu sesaat kami melakukan verifikasi")
+                speak("pembayaran melalui gopay dipilih, silahkan lakukan pembayaran dengan menggunakan kode QR yang ada pada layar")
+
         except:
             print("payment error")
 
@@ -419,9 +431,14 @@ class ScreenChoosePayment(MDBoxLayout):
                 toast('payment success')
                 self.screen_manager.current = 'screen_operate'
                 Clock.unschedule(self.payment_check)
+                toast("Pembayaran berhasil!")
+                speak("Terima kasih, pembayaran berhasil diterima")
+                speak("silahkan atur ketinggian tumbler Anda dengan menekan tombol up dan down pada layar")
+                speak("tekan tombol start untuk mulai pengisian air, dan tombol stop untuk berhenti")
 
             elif (r.json()['data']['payment_status'] != 'pending'):
-                toast("payment failed")
+                toast("Pembayaran gagal, silahkan coba lagi")
+                speak("Maaf, pembayaran gagal, silahkan coba kembali")
                 self.screen_manager.current = 'screen_choose_product'
                 Clock.unschedule(self.payment_check)
                 
@@ -459,16 +476,19 @@ class ScreenOperate(MDBoxLayout):
 
         print("fill start")
         toast("water filling is started")
+        speak("pengisian air dimulai, mohon tekan tombol stop apabila botol Anda telah penuh")
 
     def fill_stop(self):
         global out_pump_cold, out_pump_normal
         if(not DEBUG):
             out_pump_cold.off()
+            if (not in_limit_closed) : stepperAct('close')
             out_pump_normal.off()
             self.fill = False
 
         print("fill stop")
         toast("thank you for decreasing plastic bottle trash by buying our product")
+        speak("pengisian air selesai, terimakasih telah berpartisipasi untuk mengurangi limbah botol plastik dengan membeli produk kami")
         self.screen_manager.current = 'screen_choose_product'
 
     def regular_check(self, *args):
