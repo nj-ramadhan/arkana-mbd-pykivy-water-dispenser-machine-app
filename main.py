@@ -134,7 +134,7 @@ if(not DEBUG):
     out_stepper_enable = DigitalOutputDevice(23)
     out_stepper_direction = DigitalOutputDevice(24)
     out_stepper_pulse = PWMOutputDevice(12, frequency=20)
-    out_motor_linear = Motor(16, 9)
+    out_motor_linear = Motor(9, 16)
 
     out_valve_cold.off()
     out_valve_normal.off()
