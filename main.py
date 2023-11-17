@@ -165,6 +165,26 @@ maxNormalTank = 500
 maxColdTank = 500
 qrSource = 'qr_payment.png'
 
+if (not in_machine_ready):
+    try :
+        r = requests.patch(SERVER + 'machines/' + MACHINE_CODE, data={
+        'stock' : str(levelMainTank)+'%',
+        'status' : 'not_ready'
+        })
+    except Exception as e:
+        print(e)
+
+def machine_ready():
+    try :
+        r = requests.patch(SERVER + 'machines/' + MACHINE_CODE, data={
+        'stock' : str(levelMainTank)+'%',
+        'status' : 'ready'
+        })
+    except Exception as e:
+        print(e)
+
+in_machine_ready.when_activated = machine_ready
+
 def speak(text):
     tts = gTTS(text=text, lang='id', slow=False)
     filename = 'voice.mp3'
@@ -202,7 +222,7 @@ class ScreenSplash(MDBoxLayout):
             return False
 
     def regular_check(self, *args):
-        global levelColdTank, levelMainTank, levelNormalTank, maxColdTank, maxMainTank, maxNormalTank, out_pump_main, out_valve_cold, out_valve_normal
+        global levelColdTank, levelMainTank, levelNormalTank, maxColdTank, maxMainTank, maxNormalTank, out_pump_main, out_valve_cold, out_valve_normal, in_machine_ready
 
         # program for reading sensor end control system algorithm
         if(not DEBUG):
@@ -221,7 +241,7 @@ class ScreenSplash(MDBoxLayout):
         
         # Tank mechanism
         if (not MAINTENANCE):
-            if (levelMainTank <= 40):
+            if (levelMainTank <= 40 or in_machine_ready):
                 if (not DEBUG) :
                     try :
                         r = requests.patch(SERVER + 'machines/' + MACHINE_CODE, data={
