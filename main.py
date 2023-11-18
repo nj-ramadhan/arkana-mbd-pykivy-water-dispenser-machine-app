@@ -379,7 +379,7 @@ class ScreenChooseProduct(MDBoxLayout):
                     ),
                     id = str(p['id']),
                     ripple_behavior = True,
-                    on_press = lambda x:self.choose_payment(p['size_in_ml'],p['id'],p['price'])
+                    on_press = lambda a, x = p['size_in_ml'], y = p['id'], z = p['price'] : self.choose_payment(x,y,z)
                 )
             )
             
