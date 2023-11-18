@@ -18,6 +18,11 @@ from kivy.properties import ObjectProperty
 from kivy.properties import StringProperty
 from gtts import gTTS
 import playsound
+import minimalmodbus
+import time
+import qrcode
+import requests
+import serial
 
 from gpiozero import Button
 from gpiozero import RotaryEncoder
@@ -25,10 +30,6 @@ from gpiozero import DigitalInputDevice
 from gpiozero import Motor
 from gpiozero import DigitalOutputDevice
 from gpiozero import Servo
-import minimalmodbus
-import time
-import qrcode
-import requests
 
 qr = qrcode.QRCode(
     version=1,
@@ -69,6 +70,7 @@ colors = {
 
 MAINTENANCE= True
 DEBUG = True
+COUPON = False
 
 SERVER = 'https://app.kickyourplast.com/api/'
 MACHINE_CODE = 'KYP001'
@@ -96,6 +98,9 @@ if(not DEBUG):
     in_sensor_proximity_atas = Button(22)
     in_sensor_flow = DigitalInputDevice(19)
     in_machine_ready = DigitalInputDevice(27)
+
+    # qr scanner input
+    scanner = serial.Serial(baudrate=115200, port='/dev/ttyUSB1')
 
     # modbus communication of sensor declaration 
     mainTank = minimalmodbus.Instrument('/dev/ttyUSB0', 1)
@@ -165,14 +170,14 @@ maxNormalTank = 500
 maxColdTank = 500
 qrSource = 'qr_payment.png'
 
-if (not in_machine_ready):
-    try :
-        r = requests.patch(SERVER + 'machines/' + MACHINE_CODE, data={
-        'stock' : str(levelMainTank)+'%',
-        'status' : 'not_ready'
-        })
-    except Exception as e:
-        print(e)
+if (not DEBUG):
+    if (not in_machine_ready):
+        try :
+            r = requests.patch(SERVER + 'machines/' + MACHINE_CODE, data={
+            'status' : 'not_ready'
+            })
+        except Exception as e:
+            print(e)
 
 def machine_ready():
     try :
@@ -183,13 +188,14 @@ def machine_ready():
     except Exception as e:
         print(e)
 
-in_machine_ready.when_activated = machine_ready
+if (not DEBUG): in_machine_ready.when_activated = machine_ready
 
 def speak(text):
     tts = gTTS(text=text, lang='id', slow=False)
     filename = 'voice.mp3'
     tts.save(filename)
     playsound.playsound(filename)
+    os.remove(filename)
 
 def countPulse():
     global pulse
@@ -222,7 +228,7 @@ class ScreenSplash(MDBoxLayout):
             return False
 
     def regular_check(self, *args):
-        global levelColdTank, levelMainTank, levelNormalTank, maxColdTank, maxMainTank, maxNormalTank, out_pump_main, out_valve_cold, out_valve_normal, in_machine_ready
+        global COUPON, scanner, levelColdTank, levelMainTank, levelNormalTank, maxColdTank, maxMainTank, maxNormalTank, out_pump_main, out_valve_cold, out_valve_normal, in_machine_ready
 
         # program for reading sensor end control system algorithm
         if(not DEBUG):
@@ -281,15 +287,23 @@ class ScreenSplash(MDBoxLayout):
                     out_pump_main.off()
 
         # scan kupon QR CODE
-        # if (something):
-        #     try :
-        #         r = requests.post(SERVER + 'transactions/' + KODE_KUPON + '/used_machine', data={
-        #             'machine_code' : MACHINE_CODE
-        #         })
+        COUPON = str(scanner.read_until(b'\r'),'UTF-8')
+        if (COUPON):
+            try :
+                r = requests.post(SERVER + 'transactions/' + COUPON + '/used_machine', data={
+                    'machine_code' : MACHINE_CODE
+                })
 
-        #         toast(r.json().message)
-        #     except Exception as e:
-        #         print(e)
+                toast(r.json().message)
+                speak("Kupon diterima, silahkan operasikan mesin")
+                self.screen_manager.current = 'screen_operate'
+
+            except Exception as e:
+                toast("Mohon maaf, kupon yang Anda masukkan tidak kami kenali")
+                speak("Mohon maaf, kupon yang Anda masukkan tidak kami kenali")
+                print(e)
+            
+            COUPON = False
 
 class ScreenChooseProduct(MDBoxLayout):
     screen_manager = ObjectProperty(None)
@@ -341,63 +355,59 @@ class ScreenChoosePayment(MDBoxLayout):
         global qr, qrSource, product, idProduct, cold, productPrice
 
         print(method)
-        try:
-            if(method=="GOPAY"):
-                # ..... create transaction
-                qrSource = self.create_transaction(
-                    machine_code=MACHINE_CODE,
-                    method='gopay',
-                    product_id=idProduct,
-                    product_size=product,
-                    qty=1,
-                    price=productPrice,
-                    product_type="cold" if (cold) else "normal",
-                    # phone=self.phone
-                )
+        if(method=="GOPAY"):
+            # ..... create transaction
+            qrSource = self.create_transaction(
+                machine_code=MACHINE_CODE,
+                method='gopay',
+                product_id=idProduct,
+                product_size=product,
+                qty=1,
+                price=productPrice,
+                product_type="cold" if (cold) else "normal",
+                # phone=self.phone
+            )
 
-                f = open('qr_payment.png', 'wb')
-                f.write(requests.get(qrSource).content)
-                f.close
+            f = open('qr_payment.png', 'wb')
+            f.write(requests.get(qrSource).content)
+            f.close
 
-                self.screen_manager.current = 'screen_qr_payment'
-                # print("payment qris")
+            self.screen_manager.current = 'screen_qr_payment'
+            # print("payment qris")
 
-                # .... scheduling payment check
-                # Clock.schedule_interval(self.payment_check, 1)
-                toast("Silahkan lakukan pembayaran, tunggu sesaat kami melakukan verifikasi")
-                speak("pembayaran melalui gopay dipilih, silahkan scan kode QR yang tampil dilayar pada aplikasi gojek Anda")
+            # .... scheduling payment check
+            # Clock.schedule_interval(self.payment_check, 1)
+            toast("Silahkan lakukan pembayaran, tunggu sesaat kami melakukan verifikasi")
+            speak("pembayaran melalui gopay dipilih, silahkan scan kode QR yang tampil dilayar pada aplikasi gojek Anda")
 
-            elif(method=="QRIS"):
-                # ..... create transaction
-                qrSource = self.create_transaction(
-                    machine_code=MACHINE_CODE,
-                    method='qris',
-                    product_id=idProduct,
-                    product_size=product,
-                    qty=1,
-                    price=productPrice,
-                    product_type="cold" if (cold) else "normal",
-                    # phone=self.phone
-                )
+        elif(method=="QRIS"):
+            # ..... create transaction
+            qrSource = self.create_transaction(
+                machine_code=MACHINE_CODE,
+                method='qris',
+                product_id=idProduct,
+                product_size=product,
+                qty=1,
+                price=productPrice,
+                product_type="cold" if (cold) else "normal",
+                # phone=self.phone
+            )
                 
-                time.sleep(0.1)
-                qr.add_data(qrSource)
-                qr.make(fit=True)
+            time.sleep(0.1)
+            qr.add_data(qrSource)
+            qr.make(fit=True)
 
-                img = qr.make_image(back_color=(255, 255, 255), fill_color=(55, 95, 100))
-                img.save("qr_payment.png")
+            img = qr.make_image(back_color=(255, 255, 255), fill_color=(55, 95, 100))
+            img.save("qr_payment.png")
 
-                self.screen_manager.current = 'screen_qr_payment'
-                # print("payment qris")
+            self.screen_manager.current = 'screen_qr_payment'
+            # print("payment qris")
 
                 # .... scheduling payment check
                 # Clock.schedule_interval(self.payment_check, 1)
                 # toast("successfully pay with QRIS")
-                toast("Silahkan lakukan pembayaran, tunggu sesaat kami melakukan verifikasi")
-                speak("pembayaran melalui gopay dipilih, silahkan lakukan pembayaran dengan menggunakan kode QR yang ada pada layar")
-
-        except:
-            print("payment error")
+            toast("Silahkan lakukan pembayaran, tunggu sesaat kami melakukan verifikasi")
+            speak("pembayaran melalui Qris dipilih, silahkan lakukan pembayaran dengan menggunakan kode QR yang ada pada layar")
 
     def create_transaction(self, method, machine_code, product_id, product_size, qty, price, product_type, phone='-'):
         try :
@@ -419,6 +429,7 @@ class ScreenChoosePayment(MDBoxLayout):
             return r.json()['data']['payment_response_parameter']['qr_string'] if (method == 'qris') else r.json()['data']['payment_response_parameter']['actions'][0]['url']
         except Exception as e:
             print(e)
+            toast("payment error")
     
     def payment_check(self):
         try :
