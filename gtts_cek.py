@@ -1,8 +1,7 @@
 # pip install --upgrade wheel
+# pip install playsound==1.2.2
 
 from gtts import gTTS
-import os
-import time
 import playsound
 
 def speak(text):

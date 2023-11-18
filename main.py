@@ -9,6 +9,9 @@ from kivy.lang import Builder
 from kivy.core.window import Window
 from kivymd.uix.boxlayout import MDBoxLayout
 from kivymd.uix.card import MDCard
+from kivymd.uix.label import MDLabel
+from kivymd.uix.relativelayout import MDRelativeLayout
+from kivy.uix.image import Image
 from kivy.clock import Clock
 from kivy.config import Config
 from kivy.metrics import dp
@@ -25,7 +28,6 @@ import requests
 import serial
 
 from gpiozero import Button
-from gpiozero import RotaryEncoder
 from gpiozero import DigitalInputDevice
 from gpiozero import Motor
 from gpiozero import DigitalOutputDevice
@@ -78,7 +80,6 @@ MACHINE_CODE = 'KYP001'
 if (DEBUG) :
     try :
         r = requests.patch(SERVER + 'machines/' + MACHINE_CODE, data={
-            'stock' : str(levelMainTank)+'%',
             'status' : 'not_ready'            
         })
     except Exception as e:
@@ -165,9 +166,9 @@ pulse = 0
 levelMainTank = 0
 levelNormalTank = 0
 levelColdTank = 0
-maxMainTank = 1500
-maxNormalTank = 500
-maxColdTank = 500
+maxMainTank = 1200
+maxNormalTank = 260
+maxColdTank = 195
 qrSource = 'qr_payment.png'
 
 if (not DEBUG):
@@ -188,8 +189,6 @@ def machine_ready():
     except Exception as e:
         print(e)
 
-if (not DEBUG): in_machine_ready.when_activated = machine_ready
-
 def speak(text):
     tts = gTTS(text=text, lang='id', slow=False)
     filename = 'voice.mp3'
@@ -201,6 +200,7 @@ def countPulse():
     global pulse
     pulse +=1
 
+if (not DEBUG): in_machine_ready.when_activated = machine_ready
 if (not DEBUG) : in_sensor_flow.when_activated = countPulse 
 
 class ScreenSplash(MDBoxLayout):
@@ -210,7 +210,7 @@ class ScreenSplash(MDBoxLayout):
     def __init__(self, **kwargs):
         super(ScreenSplash, self).__init__(**kwargs)
         Clock.schedule_interval(self.update_progress_bar, .01)
-        Clock.schedule_interval(self.regular_check, 1)
+        Clock.schedule_interval(self.regular_check, 5)
 
     def update_progress_bar(self, *args):
         if (self.ids.progress_bar.value + 1) < 100:
@@ -234,29 +234,41 @@ class ScreenSplash(MDBoxLayout):
         if(not DEBUG):
             try:
                 read = mainTank.read_register(5,0,3,False)
-                levelMainTank = read * 100 / maxMainTank
+                levelMainTank = 100 - (read * 100 / maxMainTank)
                 time.sleep(.1)
                 read = coldTank.read_register(0x0101,0,3,False)
-                levelColdTank = read * 100 / maxColdTank
+                levelColdTank = 100 - (read * 100 / maxColdTank)
                 time.sleep(.1)
                 read = normalTank.read_register(0x0101,0,3,False)
-                levelNormalTank = read * 100 / maxNormalTank    
+                levelNormalTank = 100 - (read * 100 / maxNormalTank)    
                 
             except Exception as e:
                 print(e)
         
         # Tank mechanism
         if (not MAINTENANCE):
-            if (levelMainTank <= 40 or in_machine_ready):
+            if (not in_machine_ready):
+                try :
+                    r = requests.patch(SERVER + 'machines/' + MACHINE_CODE, data={
+                        'status' : 'not_ready'
+                    })
+                except Exception as e:
+                    print(e)
+
+            if (levelMainTank <= 35):
                 if (not DEBUG) :
                     try :
                         r = requests.patch(SERVER + 'machines/' + MACHINE_CODE, data={
                             'stock' : str(levelMainTank)+'%',
-                            'status' : 'not_ready'
+                            'status' : 'low_level'
                         })
                     except Exception as e:
                         print(e)
                     print('sending request to server')
+                    if (levelMainTank <=5):
+                        # self.screen_manager.current = 'screen_under_maintenance'
+                        pass
+
             else:
                 try :
                     r = requests.patch(SERVER + 'machines/' + MACHINE_CODE, data={
@@ -266,12 +278,12 @@ class ScreenSplash(MDBoxLayout):
                 except Exception as e:                    
                     print(e)
                     
-            if (levelColdTank <=40):
+            if (levelColdTank <=70):
                 if (not DEBUG) : 
                     out_valve_cold.off()
                     out_pump_main.off()
             
-            if (levelNormalTank <=40):
+            if (levelNormalTank <=35):
                 if (not DEBUG) : 
                     out_valve_normal.off()
                     out_pump_main.off()
@@ -287,23 +299,24 @@ class ScreenSplash(MDBoxLayout):
                     out_pump_main.off()
 
         # scan kupon QR CODE
-        COUPON = str(scanner.read_until(b'\r'),'UTF-8')
-        if (COUPON):
-            try :
-                r = requests.post(SERVER + 'transactions/' + COUPON + '/used_machine', data={
-                    'machine_code' : MACHINE_CODE
-                })
+        if (not DEBUG):
+            COUPON = str(scanner.read_until(b'\r'),'UTF-8')
+            if (COUPON):
+                try :
+                    r = requests.post(SERVER + 'transactions/' + COUPON + '/used_machine', data={
+                        'machine_code' : MACHINE_CODE
+                    })
 
-                toast(r.json().message)
-                speak("Kupon diterima, silahkan operasikan mesin")
-                self.screen_manager.current = 'screen_operate'
+                    toast(r.json().message)
+                    speak("Kupon diterima, silahkan operasikan mesin")
+                    self.screen_manager.current = 'screen_operate'
 
-            except Exception as e:
-                toast("Mohon maaf, kupon yang Anda masukkan tidak kami kenali")
-                speak("Mohon maaf, kupon yang Anda masukkan tidak kami kenali")
-                print(e)
-            
-            COUPON = False
+                except Exception as e:
+                    toast("Mohon maaf, kupon yang Anda masukkan tidak kami kenali")
+                    speak("Mohon maaf, kupon yang Anda masukkan tidak kami kenali")
+                    print(e)
+                
+                COUPON = False
 
 class ScreenChooseProduct(MDBoxLayout):
     screen_manager = ObjectProperty(None)
@@ -311,7 +324,9 @@ class ScreenChooseProduct(MDBoxLayout):
     def __init__(self, **kwargs):
         super(ScreenChooseProduct, self).__init__(**kwargs)
         Clock.schedule_interval(self.regular_check, .1)
-        
+        Clock.schedule_once(self.delayed_init)
+
+    def delayed_init(self, *args):
         try :
             r = requests.get(SERVER + 'products', {all : True})
             print(r.json()['data'])
@@ -319,9 +334,33 @@ class ScreenChooseProduct(MDBoxLayout):
         except Exception as e:
             print(e)
 
+        for p in self.products :
+            self.ids.layout_products.add_widget(
+                MDCard(
+                    MDRelativeLayout(
+                        Image(
+                            source = 'asset/330ml.png',
+                            pos_hint = {"center_x": .5, "center_y": .5},
+                            allow_stretch = True
+                        ),
+                        MDLabel(
+                            text = str(p['size_in_ml'])+'ml',
+                            adaptive_size= True,
+						    pos= ["12dp", "12dp"],
+						    bold= True
+                        )
+                    ),
+                    id = str(p['id']),
+                    ripple_behavior = True,
+                    on_press = lambda x:self.choose_payment(p['size_in_ml'],p['id'],p['price'])
+                )
+            )
+            
+        
     def cold_mode(self, value):
         global cold
         cold = value
+        
 
     def choose_payment(self, size, id, price):
         global product, idProduct, productPrice
