@@ -154,6 +154,7 @@ pump_cold = False
 pump_normal = False
 linear_motor = False
 servo_open = False
+main_switch = False
 
 pulsePerLiter = 450
 pulsePerMiliLiter = 450/1000
@@ -181,13 +182,16 @@ if (not DEBUG):
             print(e)
 
 def machine_ready():
+    global main_switch
     try :
         r = requests.patch(SERVER + 'machines/' + MACHINE_CODE, data={
         'stock' : str(levelMainTank)+'%',
         'status' : 'ready'
         })
+        main_switch = True
     except Exception as e:
         print(e)
+        main_switch = False
 
 def speak(text):
     tts = gTTS(text=text, lang='id', slow=False)
@@ -200,7 +204,7 @@ def countPulse():
     global pulse
     pulse +=1
 
-if (not DEBUG): in_machine_ready.when_activated = machine_ready
+if (not DEBUG) : in_machine_ready.when_activated = machine_ready
 if (not DEBUG) : in_sensor_flow.when_activated = countPulse 
 
 class ScreenSplash(MDBoxLayout):
@@ -224,7 +228,7 @@ class ScreenSplash(MDBoxLayout):
             self.ids.progress_bar.value = 100
             self.ids.progress_bar_label.text = 'Loading.. [{:} %]'.format(100)
             time.sleep(0.5)
-            self.screen_manager.current = 'screen_choose_product'
+            self.screen_manager.current = 'screen_standby'
             return False
 
     def regular_check(self, *args):
@@ -317,6 +321,21 @@ class ScreenSplash(MDBoxLayout):
                     print(e)
                 
                 COUPON = False
+
+class ScreenStandby(MDBoxLayout):
+    screen_manager = ObjectProperty(None)
+
+    def __init__(self, **kwargs):
+        super(ScreenStandby, self).__init__(**kwargs)
+        Clock.schedule_interval(self.regular_check, 1)
+
+    def regular_check(self, *args):
+        global main_switch
+        # program for displaying IO condition
+        if (main_switch):
+            self.screen_manager.current = 'screen_choose_payment'
+        else:
+            print("machine is standby") 
 
 class ScreenChooseProduct(MDBoxLayout):
     screen_manager = ObjectProperty(None)
