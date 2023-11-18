@@ -57,7 +57,7 @@ colors = {
     },
 
     "Light": {
-        "StatusBar": "E0E0E0",
+        "StatusBar": "#E0E0E0",
         "AppBar": "#202020",
         "Background": "#EEEEEE",
         "CardsDialogs": "#FFFFFF",
@@ -65,7 +65,7 @@ colors = {
     },
 
     "Dark": {
-        "StatusBar": "101010",
+        "StatusBar": "#101010",
         "AppBar": "#E0E0E0",
         "Background": "#111111",
         "CardsDialogs": "#000000",
@@ -158,7 +158,7 @@ pump_cold = False
 pump_normal = False
 linear_motor = False
 servo_open = False
-main_switch = False
+main_switch = True
 
 pulsePerLiter = 450
 pulsePerMiliLiter = 450/1000
@@ -178,6 +178,7 @@ qrSource = 'qr_payment.png'
 
 if (not DEBUG):
     if (not in_machine_ready):
+        main_switch = False
         try :
             r = requests.patch(SERVER + 'machines/' + MACHINE_CODE, data={
             'status' : 'not_ready'
@@ -192,16 +193,17 @@ def machine_ready():
         'stock' : str(levelMainTank)+'%',
         'status' : 'ready'
         })
-        main_switch = True
+        
     except Exception as e:
         print(e)
-        main_switch = False
+        
+    main_switch = True
 
 def speak(text):
     tts = gTTS(text=text, lang='id', slow=False)
     filename = 'voice.mp3'
     tts.save(filename)
-    playsound.playsound(filename)
+    playsound.playsound(filename, False)
     os.remove(filename)
 
 def countPulse():
@@ -274,8 +276,9 @@ class ScreenSplash(MDBoxLayout):
                         print(e)
                     print('sending request to server')
                     if (levelMainTank <=5):
-                        # self.screen_manager.current = 'screen_under_maintenance'
-                        pass
+                        self.screen_manager.current = 'screen_standby'
+                    else:
+                        if (self.screen_manager.current == 'screen_standby') : self.screen_manager.current = 'screen_choose_product'
 
             else:
                 try :
@@ -343,7 +346,8 @@ class ScreenStandby(MDBoxLayout):
                 self.screen_manager.current = 'screen_choose_product'
 
         else:
-            print("machine is standby") 
+            # print("machine is standby")
+            pass 
 
 class ScreenChooseProduct(MDBoxLayout):
     screen_manager = ObjectProperty(None)
@@ -356,7 +360,6 @@ class ScreenChooseProduct(MDBoxLayout):
     def delayed_init(self, *args):
         try :
             r = requests.get(SERVER + 'products', {all : True})
-            print(r.json()['data'])
             self.products = r.json()['data']
         except Exception as e:
             print(e)
@@ -577,6 +580,8 @@ class ScreenOperate(MDBoxLayout):
                     servo_open = True
                     out_pump_cold.on() if (cold) else out_pump_normal.on()
                 else :
+                    out_servo.value = 0
+                    servo_open = False
                     out_pump_cold.off()
                     out_pump_normal.off()
                     speak("mohon letakkan tumbler Anda")
