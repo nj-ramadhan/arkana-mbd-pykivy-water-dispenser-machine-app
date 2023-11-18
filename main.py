@@ -10,6 +10,9 @@ from kivy.core.window import Window
 from kivymd.uix.boxlayout import MDBoxLayout
 from kivymd.uix.card import MDCard
 from kivymd.uix.label import MDLabel
+from kivymd.uix.dialog import MDDialog
+from kivymd.uix.button import MDFlatButton
+from kivymd.uix.textfield import MDTextField
 from kivymd.uix.relativelayout import MDRelativeLayout
 from kivy.uix.image import Image
 from kivy.clock import Clock
@@ -73,6 +76,7 @@ colors = {
 MAINTENANCE= True
 DEBUG = True
 COUPON = False
+PASSWORD = "KYP001"
 
 SERVER = 'https://app.kickyourplast.com/api/'
 MACHINE_CODE = 'KYP001'
@@ -322,6 +326,8 @@ class ScreenSplash(MDBoxLayout):
                 
                 COUPON = False
 
+
+
 class ScreenStandby(MDBoxLayout):
     screen_manager = ObjectProperty(None)
 
@@ -333,7 +339,9 @@ class ScreenStandby(MDBoxLayout):
         global main_switch
         # program for displaying IO condition
         if (main_switch):
-            self.screen_manager.current = 'screen_choose_payment'
+            if (self.screen_manager.current == 'screen_standby'):
+                self.screen_manager.current = 'screen_choose_product'
+
         else:
             print("machine is standby") 
 
@@ -602,16 +610,34 @@ class ScreenQRPayment(MDBoxLayout):
 
 class ScreenInfo(MDBoxLayout):
     screen_manager = ObjectProperty(None)
+    password = ""
+    dialog = None
+
 
     def __init__(self, **kwargs):
         super(ScreenInfo, self).__init__(**kwargs)
 
     def screen_choose_product(self):
+        self.ids.textfield_password.opacity = 0.0
+        self.ids.textfield_password.text = ""
         self.screen_manager.current = 'screen_choose_product'
 
     def screen_maintenance(self):
+        self.ids.textfield_password.opacity = 0.0
+        self.ids.textfield_password.text = ""
         self.screen_manager.current = 'screen_maintenance'      
- 
+
+    def loading_password(self):
+        self.password = self.ids.textfield_password.text
+        print(self.password)
+        if(self.password == PASSWORD):
+            self.screen_maintenance()
+        else:
+            toast("Password is incorrect")
+
+    def show_password_textfield(self):
+        self.ids.textfield_password.opacity = 1.0
+        print("textfield is shown")
 
 class ScreenMaintenance(MDBoxLayout):
     screen_manager = ObjectProperty(None)

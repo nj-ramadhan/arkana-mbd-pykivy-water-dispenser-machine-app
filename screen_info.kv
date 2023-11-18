@@ -76,5 +76,13 @@
 			font_size: 21
 			size_hint: 0.18, 0.08
 			pos_hint: {"center_x": .75, "center_y": .80}
-			on_press: root.screen_maintenance()
+			on_press: root.show_password_textfield()
+		
+		MDTextField:
+			id: textfield_password
+			font_size: 21
+			opacity: 0.0
+			size_hint: 0.5, 0.08
+			pos_hint: {"center_x": 0.75, "center_y": .70}
+			on_text_validate: root.loading_password()	
 				
