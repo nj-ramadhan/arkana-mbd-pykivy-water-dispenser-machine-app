@@ -547,16 +547,17 @@ class ScreenOperate(MDBoxLayout):
 
     def fill_start(self):
         global pulse
+        self.n = 0
         if (not DEBUG and not self.fill) :
             pulse = 0 
             self.fill = True
 
         print("fill start")
-        toast("water filling is started")
-        speak("pengisian air dimulai, mohon tekan tombol stop apabila botol Anda telah penuh")
+        toast("water filling is started, please put your bottle")
+        speak("pengisian air dimulai, silahkan letakkan botol Anda")
 
     def fill_stop(self):
-        global out_pump_cold, out_pump_normal, servo_open
+        global out_pump_cold, out_pump_normal, servo_open, out_motor_linear
         if(not DEBUG):
             out_pump_cold.off()
             out_servo.value = 0
@@ -567,6 +568,10 @@ class ScreenOperate(MDBoxLayout):
         print("fill stop")
         toast("thank you for decreasing plastic bottle trash by buying our product")
         speak("pengisian air selesai, terimakasih telah berpartisipasi untuk mengurangi limbah botol plastik dengan membeli produk kami")
+        time.sleep(2)
+        out_motor_linear.backward()
+        time.sleep(2)
+        out_motor_linear.stop()
         self.screen_manager.current = 'screen_choose_product'
 
     def regular_check(self, *args):
@@ -584,16 +589,14 @@ class ScreenOperate(MDBoxLayout):
                     servo_open = False
                     out_pump_cold.off()
                     out_pump_normal.off()
-                    speak("mohon letakkan tumbler Anda")
-                    toast("please put your tumbler")
+                    if (self.n>=30):
+                        self.fill_stop()
+                        self.n = 0
+                    else :
+                        self.n =+1
 
             else :
-                out_pump_cold.off()
-                out_pump_normal.off()
-                out_servo.value = 0
-                servo_open = False
-                self.fill = False
-                toast("thank you for decreasing plastic bottle trash by buying our product")
+               self.fill_stop()
 
 class ScreenQRPayment(MDBoxLayout):
     screen_manager = ObjectProperty(None)
