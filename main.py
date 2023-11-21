@@ -238,7 +238,7 @@ class ScreenSplash(MDBoxLayout):
             return False
 
     def regular_check(self, *args):
-        global COUPON, product, scanner, levelColdTank, levelMainTank, levelNormalTank, maxColdTank, maxMainTank, maxNormalTank, out_pump_main, out_valve_cold, out_valve_normal, in_machine_ready
+        global COUPON, cold, product, scanner, levelColdTank, levelMainTank, levelNormalTank, maxColdTank, maxMainTank, maxNormalTank, out_pump_main, out_valve_cold, out_valve_normal, in_machine_ready
 
         # program for reading sensor end control system algorithm
         if(not DEBUG):
@@ -320,6 +320,7 @@ class ScreenSplash(MDBoxLayout):
                     speak("Kupon diterima, silahkan operasikan mesin")
 
                     product = r.json()['transaction_details'][0]["size"]
+                    cold = r.json()['transaction_details'][0]["drink_type"]
                     self.screen_manager.current = 'screen_operate'
 
                 except Exception as e:
@@ -456,7 +457,7 @@ class ScreenChoosePayment(MDBoxLayout):
                 product_size=product,
                 qty=1,
                 price=productPrice,
-                product_type="cold" if (cold) else "normal",
+                product_type="cold" if (cold) else "regular",
                 # phone=self.phone
             )
                 
