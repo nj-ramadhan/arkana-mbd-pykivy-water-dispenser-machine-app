@@ -23,7 +23,8 @@ from pathlib import Path
 from kivy.properties import ObjectProperty
 from kivy.properties import StringProperty
 from gtts import gTTS
-import playsound
+import sounddevice as sd
+import soundfile as sf
 import minimalmodbus
 import time
 import qrcode
@@ -203,7 +204,11 @@ def speak(text):
     tts = gTTS(text=text, lang='id', slow=False)
     filename = 'voice.mp3'
     tts.save(filename)
-    playsound.playsound(filename, False)
+
+    data, fs = sf.read(filename, dtype='float32')  
+    sd.play(data, fs)
+    sd.wait()
+
     os.remove(filename)
 
 def countPulse():
@@ -567,10 +572,11 @@ class ScreenOperate(MDBoxLayout):
         print("fill stop")
         toast("thank you for decreasing plastic bottle trash by buying our product")
         speak("pengisian air selesai, terimakasih telah berpartisipasi untuk mengurangi limbah botol plastik dengan membeli produk kami")
-        time.sleep(2)
-        out_motor_linear.backward()
-        time.sleep(2)
-        out_motor_linear.stop()
+        if(not DEBUG):
+            time.sleep(2)
+            out_motor_linear.backward()
+            time.sleep(2)
+            out_motor_linear.stop()
         self.screen_manager.current = 'screen_choose_product'
 
     def regular_check(self, *args):
