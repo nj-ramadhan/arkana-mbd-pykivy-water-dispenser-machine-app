@@ -62,7 +62,7 @@ colors = {
     },
 
     "Light": {
-        "StatusBar": "E0E0E0",
+        "StatusBar": "#E0E0E0",
         "AppBar": "#202020",
         "Background": "#EEEEEE",
         "CardsDialogs": "#FFFFFF",
@@ -70,7 +70,7 @@ colors = {
     },
 
     "Dark": {
-        "StatusBar": "101010",
+        "StatusBar": "#101010",
         "AppBar": "#E0E0E0",
         "Background": "#111111",
         "CardsDialogs": "#000000",
@@ -188,6 +188,7 @@ if(not DEBUG):
 
 if (not DEBUG):
     if (not in_machine_ready):
+        main_switch = False
         try :
             r = requests.patch(SERVER + 'machines/' + MACHINE_CODE, data={
             'status' : 'not_ready'
@@ -211,10 +212,11 @@ def machine_ready():
         'stock' : str(levelMainTank)+'%',
         'status' : 'ready'
         })
-        main_switch = True
+        
     except Exception as e:
         print(e)
-        main_switch = False
+        
+    main_switch = True
 
 def count_pulse():
     global pulse
@@ -248,7 +250,7 @@ class ScreenSplash(MDBoxLayout):
             return False
 
     def regular_check(self, *args):
-        global COUPON, scanner, levelColdTank, levelMainTank, levelNormalTank, maxColdTank, maxMainTank, maxNormalTank, out_pump_main, out_valve_cold, out_valve_normal, in_machine_ready
+        global COUPON, cold, product, scanner, levelColdTank, levelMainTank, levelNormalTank, maxColdTank, maxMainTank, maxNormalTank, out_pump_main, out_valve_cold, out_valve_normal, in_machine_ready
 
         # program for reading sensor end control system algorithm
         if(not DEBUG):
@@ -286,8 +288,9 @@ class ScreenSplash(MDBoxLayout):
                         print(e)
                     print('sending request to server')
                     if (levelMainTank <=5):
-                        # self.screen_manager.current = 'screen_under_maintenance'
-                        pass
+                        self.screen_manager.current = 'screen_standby'
+                    else:
+                        if (self.screen_manager.current == 'screen_standby') : self.screen_manager.current = 'screen_choose_product'
 
             else:
                 try :
@@ -323,9 +326,7 @@ class ScreenSplash(MDBoxLayout):
             COUPON = str(scanner.read_until(b'\r'),'UTF-8')
             if (COUPON):
                 try :
-                    r = requests.post(SERVER + 'transactions/' + COUPON + '/used_machine', data={
-                        'machine_code' : MACHINE_CODE
-                    })
+                    r = requests.get(SERVER + 'transaction_by_code/' + COUPON)
 
                     toast(r.json().message)
                     speak("Kupon diterima, silahkan operasikan mesin", "coupon_success")
@@ -352,7 +353,8 @@ class ScreenStandby(MDBoxLayout):
             if (self.screen_manager.current == 'screen_standby'):
                 self.screen_manager.current = 'screen_choose_product'
         else:
-            print("machine is standby") 
+            # print("machine is standby")
+            pass 
 
 class ScreenChooseProduct(MDBoxLayout):
     screen_manager = ObjectProperty(None)
@@ -365,7 +367,6 @@ class ScreenChooseProduct(MDBoxLayout):
     def delayed_init(self, *args):
         try :
             r = requests.get(SERVER + 'products', {all : True})
-            print(r.json()['data'])
             self.products = r.json()['data']
         except Exception as e:
             print(e)
@@ -389,7 +390,7 @@ class ScreenChooseProduct(MDBoxLayout):
                     ),
                     id = str(p['id']),
                     ripple_behavior = True,
-                    on_press = lambda x:self.choose_payment(p['size_in_ml'],p['id'],p['price'])
+                    on_press = lambda a, x = p['size_in_ml'], y = p['id'], z = p['price'] : self.choose_payment(x,y,z)
                 )
             )
             
@@ -463,7 +464,7 @@ class ScreenChoosePayment(MDBoxLayout):
                 product_size=product,
                 qty=1,
                 price=productPrice,
-                product_type="cold" if (cold) else "normal",
+                product_type="cold" if (cold) else "regular",
                 # phone=self.phone
             )
                 
@@ -598,6 +599,8 @@ class ScreenOperate(MDBoxLayout):
                     servo_open = True
                     out_pump_cold.on() if (cold) else out_pump_normal.on()
                 else :
+                    out_servo.value = 0
+                    servo_open = False
                     out_pump_cold.off()
                     out_pump_normal.off()
                     toast("please put your tumbler")
