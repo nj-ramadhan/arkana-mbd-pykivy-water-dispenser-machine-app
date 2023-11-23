@@ -60,7 +60,7 @@
 			text: "UP"
 			font_size: 28
 			size_hint: 0.4, 0.2
-			pos_hint: {"center_x": -0.5, "center_y": .45}
+			pos_hint: {"center_x": -0.5, "center_y": .50}
 			on_press: root.act_up()
 			on_release: root.act_stop()
 
@@ -70,7 +70,7 @@
 			text: "DOWN"
 			font_size: 28
 			size_hint: 0.4, 0.2
-			pos_hint: {"center_x": -0.5, "center_y": .15}
+			pos_hint: {"center_x": -0.5, "center_y": .20}
 			on_press: root.act_down()
 			on_release: root.act_stop()
 
@@ -80,11 +80,20 @@
 			text: "START"
 			font_size: 28
 			size_hint: 0.4, 0.2
-			pos_hint: {"center_x": .5, "center_y": .30}
+			pos_hint: {"center_x": .5, "center_y": .50}
 			on_press: root.fill_start()
 
 		MDFillRoundFlatIconButton:
 			id: bt_fill_stop
+			icon: "cancel"
+			text: "STOP"
+			font_size: 28
+			size_hint: 0.4, 0.2
+			pos_hint: {"center_x": .5, "center_y": .20}
+			on_press: root.fill_stop()
+
+		MDFillRoundFlatIconButton:
+			id: bt_fill_stop_hidden
 			text: " "
 			font_size: 21
 			size_hint: 0.18, 0.08
