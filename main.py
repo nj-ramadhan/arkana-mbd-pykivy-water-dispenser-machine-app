@@ -10,7 +10,6 @@ from kivy.core.window import Window
 from kivymd.uix.boxlayout import MDBoxLayout
 from kivymd.uix.card import MDCard
 from kivymd.uix.label import MDLabel
-from kivymd.uix.dialog import MDDialog
 from kivymd.uix.button import MDFlatButton
 from kivymd.uix.textfield import MDTextField
 from kivymd.uix.relativelayout import MDRelativeLayout
@@ -56,6 +55,12 @@ colors = {
         "700": "#09343C",
     },
 
+    "Red": {
+        "A200": "#DDD8DD",
+        "A500": "#DDD8DD",
+        "A700": "#DDD8DD",
+    },
+
     "Light": {
         "StatusBar": "E0E0E0",
         "AppBar": "#202020",
@@ -77,17 +82,8 @@ MAINTENANCE= True
 DEBUG = True
 COUPON = False
 PASSWORD = "KYP001"
-
 SERVER = 'https://app.kickyourplast.com/api/'
 MACHINE_CODE = 'KYP001'
-
-if (DEBUG) :
-    try :
-        r = requests.patch(SERVER + 'machines/' + MACHINE_CODE, data={
-            'status' : 'not_ready'            
-        })
-    except Exception as e:
-        print(e)
 
 # modbus rtu communication paramater setup
 BAUDRATE = 9600
@@ -97,6 +93,45 @@ TIMEOUT = 0.5
 PARITY = minimalmodbus.serial.PARITY_NONE
 MODE = minimalmodbus.MODE_RTU
 
+valve_cold = False
+valve_normal = False
+pump_main = False
+pump_cold = False
+pump_normal = False
+linear_motor = False
+servo_open = False
+main_switch = True
+
+pulsePerLiter = 450
+pulsePerMiliLiter = 450/1000
+
+cold = False
+product = 0
+idProduct = 0
+productPrice = 0
+pulse = 0
+levelMainTank = 0.0
+levelNormalTank = 0.0
+levelColdTank = 0.0
+maxMainTank = 1200.0
+maxNormalTank = 260.0
+maxColdTank = 195.0
+qrSource = 'asset/qr_payment.png'
+
+fill_state = False
+fill_previous = False
+delay_before_auto_down = 150
+delay_waiting_auto_down = 50
+count_time_initiate = 0
+
+if (DEBUG) :
+    try :
+        r = requests.patch(SERVER + 'machines/' + MACHINE_CODE, data={
+            'status' : 'not_ready'            
+        })
+    except Exception as e:
+        print(e)
+
 if(not DEBUG):
     # input declaration 
     in_sensor_proximity_bawah = Button(17)
@@ -105,7 +140,7 @@ if(not DEBUG):
     in_machine_ready = DigitalInputDevice(27)
 
     # qr scanner input
-    scanner = serial.Serial(baudrate=115200, port='/dev/ttyUSB1')
+    scanner = serial.Serial(baudrate=115200, port='/dev/ttyACM0')
 
     # modbus communication of sensor declaration 
     mainTank = minimalmodbus.Instrument('/dev/ttyUSB0', 1)
@@ -151,31 +186,6 @@ if(not DEBUG):
     out_pump_normal.off()
     out_motor_linear.stop()
 
-valve_cold = False
-valve_normal = False
-pump_main = False
-pump_cold = False
-pump_normal = False
-linear_motor = False
-servo_open = False
-main_switch = False
-
-pulsePerLiter = 450
-pulsePerMiliLiter = 450/1000
-
-cold = False
-product = 0
-idProduct = 0
-productPrice = 0
-pulse = 0
-levelMainTank = 0
-levelNormalTank = 0
-levelColdTank = 0
-maxMainTank = 1200
-maxNormalTank = 260
-maxColdTank = 195
-qrSource = 'qr_payment.png'
-
 if (not DEBUG):
     if (not in_machine_ready):
         try :
@@ -184,6 +194,15 @@ if (not DEBUG):
             })
         except Exception as e:
             print(e)
+
+def speak(text, name):
+    try:
+        # tts = gTTS(text=text, lang='id', slow=False)
+        filename = "asset/sound/"+ name + '.mp3'
+        # tts.save(filename)
+        playsound.playsound(filename)
+    except Exception as e:
+        print("error play sound file", e)
 
 def machine_ready():
     global main_switch
@@ -197,19 +216,12 @@ def machine_ready():
         print(e)
         main_switch = False
 
-def speak(text):
-    tts = gTTS(text=text, lang='id', slow=False)
-    filename = 'voice.mp3'
-    tts.save(filename)
-    playsound.playsound(filename)
-    os.remove(filename)
-
-def countPulse():
+def count_pulse():
     global pulse
     pulse +=1
 
 if (not DEBUG) : in_machine_ready.when_activated = machine_ready
-if (not DEBUG) : in_sensor_flow.when_activated = countPulse 
+if (not DEBUG) : in_sensor_flow.when_activated = count_pulse 
 
 class ScreenSplash(MDBoxLayout):
     screen_manager = ObjectProperty(None)
@@ -316,17 +328,15 @@ class ScreenSplash(MDBoxLayout):
                     })
 
                     toast(r.json().message)
-                    speak("Kupon diterima, silahkan operasikan mesin")
+                    speak("Kupon diterima, silahkan operasikan mesin", "coupon_success")
                     self.screen_manager.current = 'screen_operate'
 
                 except Exception as e:
                     toast("Mohon maaf, kupon yang Anda masukkan tidak kami kenali")
-                    speak("Mohon maaf, kupon yang Anda masukkan tidak kami kenali")
+                    speak("Mohon maaf, kupon yang Anda masukkan tidak kami kenali", "coupon_failed")
                     print(e)
                 
                 COUPON = False
-
-
 
 class ScreenStandby(MDBoxLayout):
     screen_manager = ObjectProperty(None)
@@ -341,7 +351,6 @@ class ScreenStandby(MDBoxLayout):
         if (main_switch):
             if (self.screen_manager.current == 'screen_standby'):
                 self.screen_manager.current = 'screen_choose_product'
-
         else:
             print("machine is standby") 
 
@@ -366,7 +375,8 @@ class ScreenChooseProduct(MDBoxLayout):
                 MDCard(
                     MDRelativeLayout(
                         Image(
-                            source = 'asset/330ml.png',
+                            source = 'asset/' + str(p['size_in_ml'])+'ml.png',
+                            # source = 'asset/330ml.png',
                             pos_hint = {"center_x": .5, "center_y": .5},
                             allow_stretch = True
                         ),
@@ -383,12 +393,10 @@ class ScreenChooseProduct(MDBoxLayout):
                 )
             )
             
-        
     def cold_mode(self, value):
         global cold
         cold = value
         
-
     def choose_payment(self, size, id, price):
         global product, idProduct, productPrice
         self.screen_manager.current = 'screen_choose_payment'
@@ -434,7 +442,7 @@ class ScreenChoosePayment(MDBoxLayout):
                 # phone=self.phone
             )
 
-            f = open('qr_payment.png', 'wb')
+            f = open('asset/qr_payment.png', 'wb')
             f.write(requests.get(qrSource).content)
             f.close
 
@@ -444,7 +452,7 @@ class ScreenChoosePayment(MDBoxLayout):
             # .... scheduling payment check
             # Clock.schedule_interval(self.payment_check, 1)
             toast("Silahkan lakukan pembayaran, tunggu sesaat kami melakukan verifikasi")
-            speak("pembayaran melalui gopay dipilih, silahkan scan kode QR yang tampil dilayar pada aplikasi gojek Anda")
+            speak("pembayaran melalui gopay dipilih, silahkan scan kode QR yang tampil dilayar pada aplikasi gojek Anda", "pay_gopay")
 
         elif(method=="QRIS"):
             # ..... create transaction
@@ -464,16 +472,12 @@ class ScreenChoosePayment(MDBoxLayout):
             qr.make(fit=True)
 
             img = qr.make_image(back_color=(255, 255, 255), fill_color=(55, 95, 100))
-            img.save("qr_payment.png")
+            img.save("asset/qr_payment.png")
 
             self.screen_manager.current = 'screen_qr_payment'
-            # print("payment qris")
 
-                # .... scheduling payment check
-                # Clock.schedule_interval(self.payment_check, 1)
-                # toast("successfully pay with QRIS")
             toast("Silahkan lakukan pembayaran, tunggu sesaat kami melakukan verifikasi")
-            speak("pembayaran melalui Qris dipilih, silahkan lakukan pembayaran dengan menggunakan kode QR yang ada pada layar")
+            speak("pembayaran melalui Qris dipilih, silahkan lakukan pembayaran dengan menggunakan kode QR yang ada pada layar", "pay_qris")
 
     def create_transaction(self, method, machine_code, product_id, product_size, qty, price, product_type, phone='-'):
         try :
@@ -506,13 +510,15 @@ class ScreenChoosePayment(MDBoxLayout):
                 self.screen_manager.current = 'screen_operate'
                 Clock.unschedule(self.payment_check)
                 toast("Pembayaran berhasil!")
-                speak("Terima kasih, pembayaran berhasil diterima")
-                speak("silahkan atur ketinggian tumbler Anda dengan menekan tombol up dan down pada layar")
-                speak("tekan tombol start untuk mulai pengisian air, dan tombol stop untuk berhenti")
+                speak("Terima kasih, pembayaran berhasil diterima", "pay_succes")
+                time.sleep(0.1)
+                speak("silahkan atur ketinggian tumbler Anda dengan menekan tombol up dan down pada layar", "command_tumbler")
+                time.sleep(0.1)
+                speak("tekan tombol start untuk mulai pengisian air, dan tombol stop untuk berhenti", "command_fill")
 
             elif (r.json()['data']['payment_status'] != 'pending'):
                 toast("Pembayaran gagal, silahkan coba lagi")
-                speak("Maaf, pembayaran gagal, silahkan coba kembali")
+                speak("Maaf, pembayaran gagal, silahkan coba kembali", "pay_failed")
                 self.screen_manager.current = 'screen_choose_product'
                 Clock.unschedule(self.payment_check)
                 
@@ -524,53 +530,68 @@ class ScreenChoosePayment(MDBoxLayout):
 
 class ScreenOperate(MDBoxLayout):
     screen_manager = ObjectProperty(None)
-    fill = False
 
     def __init__(self, **kwargs):       
         super(ScreenOperate, self).__init__(**kwargs)
         Clock.schedule_interval(self.regular_check, .1)
 
-    def move_up(self):
-        global out_motor_linear
-        if (not DEBUG) : out_motor_linear.forward()
-        print("move up")
-        toast("moving tumbler base up")
+    def act_up(self):
+        global linear_motor, out_motor_linear
 
-    def move_down(self):
-        global out_motor_linear
+        self.ids.bt_up.md_bg_color = "#3C9999"
+        if (not DEBUG) : out_motor_linear.forward()
+        toast("tumbler base is going up")
+
+    def act_down(self):
+        global linear_motor, out_motor_linear
+
+        self.ids.bt_down.md_bg_color = "#3C9999"
         if (not DEBUG) : out_motor_linear.backward()
-        print("move down")
-        toast("moving tumbler base down")
+        toast("tumbler base is going down")
+
+    def act_stop(self):
+        global linear_motor, out_motor_linear
+
+        self.ids.bt_up.md_bg_color = "#09343C"
+        self.ids.bt_down.md_bg_color = "#09343C"
+        if (not DEBUG) : out_motor_linear.stop()
 
     def fill_start(self):
-        global pulse
-        if (not DEBUG and not self.fill) :
+        global pulse, fill_state
+
+        if (not DEBUG and not fill_state) :
             pulse = 0 
-            self.fill = True
+            fill_state = True
 
         print("fill start")
         toast("water filling is started")
-        speak("pengisian air dimulai, mohon tekan tombol stop apabila botol Anda telah penuh")
+        speak("pengisian air dimulai, mohon tekan tombol stop apabila botol Anda telah penuh", "fill_start")
 
     def fill_stop(self):
-        global out_pump_cold, out_pump_normal, servo_open
-        if(not DEBUG):
-            out_pump_cold.off()
-            out_servo.value = 0
-            out_pump_normal.off()
-            self.fill = False
+        global out_pump_cold, out_pump_normal, servo_open, fill_state
 
         servo_open = False
+        fill_state = False
+
+        if (not DEBUG) :
+            out_pump_cold.off()
+            out_pump_normal.off()
+            out_servo.value = 0
+
         print("fill stop")
         toast("thank you for decreasing plastic bottle trash by buying our product")
-        speak("pengisian air selesai, terimakasih telah berpartisipasi untuk mengurangi limbah botol plastik dengan membeli produk kami")
+        speak("terimakasih telah mengurangi sampah botol plastik dengan membeli produk kami", "fill_stop")
         self.screen_manager.current = 'screen_choose_product'
 
     def regular_check(self, *args):
         global pulse, product, pulsePerMiliLiter, in_sensor_proximity_atas, in_sensor_proximity_bawah, out_pump_cold, out_pump_normal, out_servo, servo_open
+        global fill_state, fill_previous, delay_before_auto_down, delay_waiting_auto_down, count_time_initiate
 
-        if (self.fill):
-            if (pulse <= pulsePerMiliLiter*product):
+        if (fill_state):
+            count_time_initiate = delay_before_auto_down
+            fill_previous = True
+
+            if (pulse <= pulsePerMiliLiter * product):
                 if (in_sensor_proximity_atas or in_sensor_proximity_bawah): 
                 # if (True) :
                     out_servo.value = 1
@@ -579,28 +600,33 @@ class ScreenOperate(MDBoxLayout):
                 else :
                     out_pump_cold.off()
                     out_pump_normal.off()
-                    speak("mohon letakkan tumbler Anda")
                     toast("please put your tumbler")
+                    speak("mohon letakkan tumbler Anda", "put_tumbler")
 
             else :
-                out_pump_cold.off()
-                out_pump_normal.off()
-                out_servo.value = 0
-                servo_open = False
-                self.fill = False
-                toast("thank you for decreasing plastic bottle trash by buying our product")
+                self.fill_stop()
+        
+        elif(not fill_state and fill_previous):
+            print(count_time_initiate)
+            if (count_time_initiate == 0):
+                fill_previous = False
+
+            if (count_time_initiate > 0):
+                count_time_initiate -= 1
+
+            if (count_time_initiate <= delay_waiting_auto_down):
+                self.act_down()
 
 class ScreenQRPayment(MDBoxLayout):
     screen_manager = ObjectProperty(None)
 
     def __init__(self, **kwargs):
         super(ScreenQRPayment, self).__init__(**kwargs)
-        Clock.schedule_interval(self.regular_check, 1)
+        Clock.schedule_interval(self.regular_check, 5)
         
     def regular_check(self, *args):
-        self.ids.image_qr_payment.source = 'qr_payment.png'
+        self.ids.image_qr_payment.source = 'asset/qr_payment.png'
         self.ids.image_qr_payment.reload()
-        pass
 
     def cancel(self):
         self.screen_manager.current = 'screen_choose_product'
@@ -611,8 +637,6 @@ class ScreenQRPayment(MDBoxLayout):
 class ScreenInfo(MDBoxLayout):
     screen_manager = ObjectProperty(None)
     password = ""
-    dialog = None
-
 
     def __init__(self, **kwargs):
         super(ScreenInfo, self).__init__(**kwargs)
@@ -694,58 +718,32 @@ class ScreenMaintenance(MDBoxLayout):
     def act_open(self):
         global servo_open, out_servo
 
-        # servo_open is boolean, if servo_open on it can change GPIO condition to move open or close
-        # if (servo_open):
-        #     stepperAct('open')
-        #     servo_open = False
-        # else:
-        #     stepperAct('close')
-        #     servo_open = True
-        # if not lsOpen
-        if (not DEBUG) : 
-            out_servo.value = 1
-
         servo_open = True
-        
+        if (not DEBUG) : out_servo.value = 1      
 
     def act_close(self):
-        global servo_open
+        global servo_open, out_servo
 
-        # servo_open is boolean, if servo_open on it can change GPIO condition to move open or close
-        # if (servo_open):
-        #     stepperAct('open')
-        #     servo_open = False
-        # else:
-        #     stepperAct('close')
-        #     servo_open = True
-
-        if (not DEBUG) : 
-            out_servo.value = 0
-
-                
         servo_open = False
+        if (not DEBUG) : out_servo.value = 0
 
     def act_up(self):
         global linear_motor, out_motor_linear
+
         self.ids.bt_up.md_bg_color = "#3C9999"
         if (not DEBUG) : out_motor_linear.forward()
         toast("tumbler base is going up")
 
-        # linear_motor is boolean, if linear motor on it can change GPIO condition to move up or down
-        # if (linear_motor):
-        #     pass
-
     def act_down(self):
         global linear_motor, out_motor_linear
+
         self.ids.bt_down.md_bg_color = "#3C9999"
         if (not DEBUG) : out_motor_linear.backward()
         toast("tumbler base is going down")
 
-        # if (linear_motor):
-        #     pass
-
     def act_stop(self):
         global linear_motor, out_motor_linear
+
         self.ids.bt_up.md_bg_color = "#09343C"
         self.ids.bt_down.md_bg_color = "#09343C"
         if (not DEBUG) : out_motor_linear.stop()
@@ -756,35 +754,25 @@ class ScreenMaintenance(MDBoxLayout):
     def regular_check(self, *args):
         global levelColdTank, levelMainTank, levelNormalTank
 
-        self.ids.lb_level_main.text = str(levelMainTank) + '%'
-        self.ids.lb_level_cold.text = str(levelColdTank) + '%'
-        self.ids.lb_level_normal.text = str(levelNormalTank) + '%'
+        self.ids.lb_level_main.text = f"{levelMainTank:6.3} %"
+        self.ids.lb_level_cold.text = f"{levelColdTank:6.3} %"
+        self.ids.lb_level_normal.text = f"{levelNormalTank:6.3} %"
 
         # program for displaying IO condition        
-        if (valve_cold):
-            self.ids.bt_valve_cold.md_bg_color = "#3C9999"
-        else:
-            self.ids.bt_valve_cold.md_bg_color = "#09343C"
+        if (valve_cold): self.ids.bt_valve_cold.md_bg_color = "#3C9999"
+        else: self.ids.bt_valve_cold.md_bg_color = "#09343C"
 
-        if (valve_normal):
-            self.ids.bt_valve_normal.md_bg_color = "#3C9999"
-        else:
-            self.ids.bt_valve_normal.md_bg_color = "#09343C"
+        if (valve_normal): self.ids.bt_valve_normal.md_bg_color = "#3C9999"
+        else: self.ids.bt_valve_normal.md_bg_color = "#09343C"
 
-        if (pump_main):
-            self.ids.bt_pump_main.md_bg_color = "#3C9999"
-        else:
-            self.ids.bt_pump_main.md_bg_color = "#09343C"
+        if (pump_main): self.ids.bt_pump_main.md_bg_color = "#3C9999"
+        else: self.ids.bt_pump_main.md_bg_color = "#09343C"
 
-        if (pump_cold):
-            self.ids.bt_pump_cold.md_bg_color = "#3C9999"
-        else:
-            self.ids.bt_pump_cold.md_bg_color = "#09343C"
+        if (pump_cold): self.ids.bt_pump_cold.md_bg_color = "#3C9999"
+        else: self.ids.bt_pump_cold.md_bg_color = "#09343C"
 
-        if (pump_normal):
-            self.ids.bt_pump_normal.md_bg_color = "#3C9999"
-        else:
-            self.ids.bt_pump_normal.md_bg_color = "#09343C"
+        if (pump_normal): self.ids.bt_pump_normal.md_bg_color = "#3C9999"
+        else: self.ids.bt_pump_normal.md_bg_color = "#09343C"
 
         if (servo_open):
             self.ids.bt_open.md_bg_color = "#3C9999"
@@ -801,11 +789,11 @@ class WaterDispenserMachineApp(MDApp):
         self.theme_cls.colors = colors
         self.theme_cls.primary_palette = "BlueGray"
         self.theme_cls.accent_palette = "Blue"
-        self.icon = 'asset/Icon_Logo.png'
-        Window.fullscreen = 'auto'
-        Window.borderless = True
-        # Window.size = 1080, 640
-        # Window.allow_screensaver = True
+        self.icon = 'asset/Logo_Main.png'
+        # Window.fullscreen = 'auto'
+        # Window.borderless = True
+        Window.size = 1080, 600
+        Window.allow_screensaver = True
 
         screen = Builder.load_file('main.kv')
 

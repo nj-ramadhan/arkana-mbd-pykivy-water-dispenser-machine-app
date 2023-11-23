@@ -22,7 +22,7 @@
                     
             Image:
                 id: logo
-                source:'asset/Main_Logo.png'
+                source:'asset/Logo_Main.png'
                 size_hint_x: 0.25
                 allow_stretch: True                   
 
@@ -80,9 +80,10 @@
 		
 		MDTextField:
 			id: textfield_password
-			font_size: 21
+			font_size: 12
+			password: True
 			opacity: 0.0
-			size_hint: 0.5, 0.08
+			size_hint: 0.5, 0.1
 			pos_hint: {"center_x": 0.75, "center_y": .70}
 			on_text_validate: root.loading_password()	
 				

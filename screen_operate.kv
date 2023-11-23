@@ -22,7 +22,7 @@
                     
             Image:
                 id: logo
-                source:'asset/Main_Logo.png'
+                source:'asset/Logo_Main.png'
                 size_hint_x: 0.25
                 allow_stretch: True                   
 
@@ -49,43 +49,44 @@
 			id: layout_info
 			orientation: "vertical"
 			md_bg_color: app.theme_cls.accent_color
-			size_hint_y: 0.75
+			size_hint: 2, 0.75
 			padding:10
 			spacing:10
 
 	MDRelativeLayout:
 		MDFillRoundFlatIconButton:
-			id: bt_move_up
+			id: bt_up
 			icon: "arrow-up"
 			text: "UP"
 			font_size: 28
-			size_hint: 0.4, 0.1
+			size_hint: 0.4, 0.2
 			pos_hint: {"center_x": -0.5, "center_y": .45}
-			on_press: root.move_up()
+			on_press: root.act_up()
+			on_release: root.act_stop()
 
 		MDFillRoundFlatIconButton:
-			id: bt_move_down
+			id: bt_down
 			icon: "arrow-down"
 			text: "DOWN"
 			font_size: 28
-			size_hint: 0.4, 0.1
+			size_hint: 0.4, 0.2
 			pos_hint: {"center_x": -0.5, "center_y": .15}
-			on_press: root.move_down()
+			on_press: root.act_down()
+			on_release: root.act_stop()
 
 		MDFillRoundFlatIconButton:
 			id: bt_fill_start
-			icon: "play"
+			icon: "water"
 			text: "START"
 			font_size: 28
-			size_hint: 0.4, 0.1
-			pos_hint: {"center_x": .5, "center_y": .45}
+			size_hint: 0.4, 0.2
+			pos_hint: {"center_x": .5, "center_y": .30}
 			on_press: root.fill_start()
 
 		MDFillRoundFlatIconButton:
 			id: bt_fill_stop
-			icon: "stop"
-			text: "STOP"
-			font_size: 28
-			size_hint: 0.4, 0.1
-			pos_hint: {"center_x": .5, "center_y": .15}
+			text: " "
+			font_size: 21
+			size_hint: 0.18, 0.08
+			pos_hint: {"center_x": .75, "center_y": .80}
 			on_press: root.fill_stop()
