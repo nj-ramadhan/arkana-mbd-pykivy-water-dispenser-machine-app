@@ -802,6 +802,11 @@ class WaterDispenserMachineApp(MDApp):
 
         return screen
 
-
 if __name__ == '__main__':
-    WaterDispenserMachineApp().run()
+    try:
+        WaterDispenserMachineApp().run()
+    except KeyboardInterrupt as interrupt:
+        print(interrupt)
+        print('masuk')
+        if (not DEBUG) : scanner.close()
+        exit()
