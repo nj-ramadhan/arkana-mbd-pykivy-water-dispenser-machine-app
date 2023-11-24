@@ -33,7 +33,7 @@ from gpiozero import Button
 from gpiozero import DigitalInputDevice
 from gpiozero import Motor
 from gpiozero import DigitalOutputDevice
-from gpiozero import Servo
+from gpiozero import AngularServo
 
 qr = qrcode.QRCode(
     version=1,
@@ -176,7 +176,7 @@ if(not DEBUG):
     out_pump_main = DigitalOutputDevice(21)
     out_pump_cold = DigitalOutputDevice(5)
     out_pump_normal = DigitalOutputDevice(6)
-    out_servo = Servo(12)
+    out_servo = AngularServo(12, initial_angle=0, min_angle=-90, max_angle=90)
     out_motor_linear = Motor(9, 16)
 
     out_valve_cold.on() # on = close 
@@ -577,7 +577,7 @@ class ScreenOperate(MDBoxLayout):
         if (not DEBUG) :
             out_pump_cold.off()
             out_pump_normal.off()
-            out_servo.value = 0
+            out_servo.angle = 0
 
         print("fill stop")
         toast("thank you for decreasing plastic bottle trash by buying our product")
@@ -595,11 +595,11 @@ class ScreenOperate(MDBoxLayout):
             if (pulse <= pulsePerMiliLiter * product):
                 if (in_sensor_proximity_atas or in_sensor_proximity_bawah): 
                 # if (True) :
-                    out_servo.value = 1
+                    out_servo.angle = 90
                     servo_open = True
                     out_pump_cold.on() if (cold) else out_pump_normal.on()
                 else :
-                    out_servo.value = 0
+                    out_servo.angle = 0
                     servo_open = False
                     out_pump_cold.off()
                     out_pump_normal.off()
@@ -722,13 +722,13 @@ class ScreenMaintenance(MDBoxLayout):
         global servo_open, out_servo
 
         servo_open = True
-        if (not DEBUG) : out_servo.value = 1      
+        if (not DEBUG) : out_servo.angle = 90      
 
     def act_close(self):
         global servo_open, out_servo
 
         servo_open = False
-        if (not DEBUG) : out_servo.value = 0
+        if (not DEBUG) : out_servo.angle = 0
 
     def act_up(self):
         global linear_motor, out_motor_linear
@@ -793,9 +793,9 @@ class WaterDispenserMachineApp(MDApp):
         self.theme_cls.primary_palette = "BlueGray"
         self.theme_cls.accent_palette = "Blue"
         self.icon = 'asset/Logo_Main.png'
-        # Window.fullscreen = 'auto'
-        # Window.borderless = True
-        Window.size = 1080, 600
+        Window.fullscreen = 'auto'
+        Window.borderless = True
+        # Window.size = 1080, 600
         Window.allow_screensaver = True
 
         screen = Builder.load_file('main.kv')
