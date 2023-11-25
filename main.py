@@ -134,7 +134,7 @@ if (DEBUG) :
 
 if(not DEBUG):
     # input declaration 
-    in_sensor_proximity_bawah = Button(17)
+    in_sensor_proximity_bawah = Button(25)
     in_sensor_proximity_atas = Button(22)
     in_sensor_flow = DigitalInputDevice(19)
     in_machine_ready = DigitalInputDevice(27)
@@ -176,7 +176,7 @@ if(not DEBUG):
     out_pump_main = DigitalOutputDevice(21)
     out_pump_cold = DigitalOutputDevice(5)
     out_pump_normal = DigitalOutputDevice(6)
-    out_servo = AngularServo(12, initial_angle=0, min_angle=-90, max_angle=90)
+    out_servo = AngularServo(12, initial_angle=0, min_angle=-90, max_angle=90, max_pulse_width=2.5/1000, min_pulse_width=0.5/1000)
     out_motor_linear = Motor(9, 16)
 
     out_valve_cold.on() # on = close 
@@ -256,13 +256,13 @@ class ScreenSplash(MDBoxLayout):
         if(not DEBUG):
             try:
                 read = mainTank.read_register(5,0,3,False)
-                levelMainTank = 100 - (read * 100 / maxMainTank)
+                levelMainTank = round(100 - (read * 100 / maxMainTank),2)
                 time.sleep(.1)
                 read = coldTank.read_register(0x0101,0,3,False)
-                levelColdTank = 100 - (read * 100 / maxColdTank)
+                levelColdTank = round(100 - (read * 100 / maxColdTank),2)
                 time.sleep(.1)
                 read = normalTank.read_register(0x0101,0,3,False)
-                levelNormalTank = 100 - (read * 100 / maxNormalTank)    
+                levelNormalTank = round(100 - (read * 100 / maxNormalTank),2)    
                 
             except Exception as e:
                 print(e)
@@ -757,9 +757,9 @@ class ScreenMaintenance(MDBoxLayout):
     def regular_check(self, *args):
         global levelColdTank, levelMainTank, levelNormalTank
 
-        self.ids.lb_level_main.text = f"{levelMainTank:6.3} %"
-        self.ids.lb_level_cold.text = f"{levelColdTank:6.3} %"
-        self.ids.lb_level_normal.text = f"{levelNormalTank:6.3} %"
+        self.ids.lb_level_main.text = f"{levelMainTank} %"
+        self.ids.lb_level_cold.text = f"{levelColdTank} %"
+        self.ids.lb_level_normal.text = f"{levelNormalTank} %"
 
         # program for displaying IO condition        
         if (valve_cold): self.ids.bt_valve_cold.md_bg_color = "#3C9999"
