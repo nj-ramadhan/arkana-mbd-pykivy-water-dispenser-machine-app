@@ -28,6 +28,7 @@ import time
 import qrcode
 import requests
 import serial
+import asyncio
 
 from gpiozero import Button
 from gpiozero import DigitalInputDevice
@@ -132,6 +133,10 @@ if (DEBUG) :
     except Exception as e:
         print(e)
 
+# scanner = serial.Serial(baudrate=115200, port='COM3')
+# scanner.close()
+
+
 if(not DEBUG):
     # input declaration 
     in_sensor_proximity_bawah = Button(25)
@@ -141,6 +146,7 @@ if(not DEBUG):
 
     # qr scanner input
     scanner = serial.Serial(baudrate=115200, port='/dev/ttyACM0')
+    scanner.close()
 
     # modbus communication of sensor declaration 
     mainTank = minimalmodbus.Instrument('/dev/ttyUSB0', 1)
@@ -250,7 +256,7 @@ class ScreenSplash(MDBoxLayout):
             return False
 
     def regular_check(self, *args):
-        global COUPON, cold, product, scanner, levelColdTank, levelMainTank, levelNormalTank, maxColdTank, maxMainTank, maxNormalTank, out_pump_main, out_valve_cold, out_valve_normal, in_machine_ready
+        global levelColdTank, levelMainTank, levelNormalTank, maxColdTank, maxMainTank, maxNormalTank, out_pump_main, out_valve_cold, out_valve_normal, in_machine_ready
 
         # program for reading sensor end control system algorithm
         if(not DEBUG):
@@ -321,24 +327,6 @@ class ScreenSplash(MDBoxLayout):
                     out_valve_normal.on()
                     out_pump_main.off()
 
-        # scan kupon QR CODE
-        if (not DEBUG):
-            COUPON = str(scanner.read_until(b'\r'),'UTF-8')
-            if (COUPON):
-                try :
-                    r = requests.get(SERVER + 'transaction_by_code/' + COUPON)
-
-                    toast(r.json().message)
-                    speak("Kupon diterima, silahkan operasikan mesin", "coupon_success")
-                    self.screen_manager.current = 'screen_operate'
-
-                except Exception as e:
-                    toast("Mohon maaf, kupon yang Anda masukkan tidak kami kenali")
-                    speak("Mohon maaf, kupon yang Anda masukkan tidak kami kenali", "coupon_failed")
-                    print(e)
-                
-                COUPON = False
-
 class ScreenStandby(MDBoxLayout):
     screen_manager = ObjectProperty(None)
 
@@ -363,6 +351,8 @@ class ScreenChooseProduct(MDBoxLayout):
         super(ScreenChooseProduct, self).__init__(**kwargs)
         Clock.schedule_interval(self.regular_check, .1)
         Clock.schedule_once(self.delayed_init)
+        scanner.open()
+        Clock.schedule_interval(self.scanner_read, .1)
 
     def delayed_init(self, *args):
         try :
@@ -393,6 +383,34 @@ class ScreenChooseProduct(MDBoxLayout):
                     on_press = lambda a, x = p['size_in_ml'], y = p['id'], z = p['price'] : self.choose_payment(x,y,z)
                 )
             )
+    
+    def scanner_read(self, *args):
+        global COUPON, cold, product, scanner
+        # scan kupon QR CODE
+        # if (True):
+        if (not DEBUG):
+            if (scanner.in_waiting>=1):
+                COUPON = str(scanner.read_until(b'\r'),'UTF-8')
+                if (COUPON):
+                    endpoint = f'{SERVER}transaction_by_code/{COUPON}'
+                    print(endpoint)
+                    try :
+                        r = requests.get(endpoint.strip())
+
+                        # toast(r.json().message)
+                        # print(r.json())
+                        cold = False if (r.json()['transaction_details'][0]['drink_type']=='regular') else True
+                        product = r.json()['transaction_details'][0]['size']
+                        print(cold, product)
+                        speak("Kupon diterima, silahkan operasikan mesin", "coupon_success")
+                        self.screen_manager.current = 'screen_operate'
+
+                    except Exception as e:
+                        toast("Mohon maaf, kupon yang Anda masukkan tidak kami kenali")
+                        speak("Mohon maaf, kupon yang Anda masukkan tidak kami kenali", "coupon_failed")
+                        print(e)
+                    
+                    COUPON = False
             
     def cold_mode(self, value):
         global cold
