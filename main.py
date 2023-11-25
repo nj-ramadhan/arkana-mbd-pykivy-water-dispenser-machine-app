@@ -451,8 +451,9 @@ class ScreenChoosePayment(MDBoxLayout):
             # print("payment qris")
 
             # .... scheduling payment check
-            # Clock.schedule_interval(self.payment_check, 1)
+            self.n_payment_check = 0
             toast("Silahkan lakukan pembayaran, tunggu sesaat kami melakukan verifikasi")
+            Clock.schedule_interval(self.payment_check, 1)
             speak("pembayaran melalui gopay dipilih, silahkan scan kode QR yang tampil dilayar pada aplikasi gojek Anda", "pay_gopay")
 
         elif(method=="QRIS"):
@@ -476,8 +477,10 @@ class ScreenChoosePayment(MDBoxLayout):
             img.save("asset/qr_payment.png")
 
             self.screen_manager.current = 'screen_qr_payment'
-
+            
+            self.n_payment_check = 0
             toast("Silahkan lakukan pembayaran, tunggu sesaat kami melakukan verifikasi")
+            Clock.schedule_interval(self.payment_check, 1)
             speak("pembayaran melalui Qris dipilih, silahkan lakukan pembayaran dengan menggunakan kode QR yang ada pada layar", "pay_qris")
 
     def create_transaction(self, method, machine_code, product_id, product_size, qty, price, product_type, phone='-'):
@@ -497,37 +500,58 @@ class ScreenChoosePayment(MDBoxLayout):
                 ]
             })
             # print(r.json()['data'])
+            self.transaction_id = r.json()['data']['id']
+            print("transaction id : ", self.transaction_id)
             return r.json()['data']['payment_response_parameter']['qr_string'] if (method == 'qris') else r.json()['data']['payment_response_parameter']['actions'][0]['url']
         except Exception as e:
             print(e)
             toast("payment error")
     
-    def payment_check(self):
-        try :
-            r = requests.get(SERVER + 'machine_transactions/' + self.transaction_id)
-            
-            if (r.json()['data']['payment_status'] == 'success'):
-                toast('payment success')
-                self.screen_manager.current = 'screen_operate'
-                Clock.unschedule(self.payment_check)
-                toast("Pembayaran berhasil!")
-                speak("Terima kasih, pembayaran berhasil diterima", "pay_succes")
-                time.sleep(0.1)
-                speak("silahkan atur ketinggian tumbler Anda dengan menekan tombol up dan down pada layar", "command_tumbler")
-                time.sleep(0.1)
-                speak("tekan tombol start untuk mulai pengisian air, dan tombol stop untuk berhenti", "command_fill")
+    def payment_check(self, *args):
+        self.n_payment_check += 1
+        print(self.n_payment_check)
+        if (self.n_payment_check <= 60):
+            try :
+                r = requests.get(SERVER + 'machine_transactions/' + str(self.transaction_id))
 
-            elif (r.json()['data']['payment_status'] != 'pending'):
-                toast("Pembayaran gagal, silahkan coba lagi")
-                speak("Maaf, pembayaran gagal, silahkan coba kembali", "pay_failed")
-                self.screen_manager.current = 'screen_choose_product'
-                Clock.unschedule(self.payment_check)
+                print(r.json()['payment_status'])
                 
-        except Exception as e:
-            print(e)
+                if (r.json()['payment_status'] == 'settlement'):
+                    Clock.unschedule(self.payment_check)
+                    toast('payment success')
+                    self.screen_manager.current = 'screen_operate'
+                    toast("Pembayaran berhasil!")
+                    speak("Terima kasih, pembayaran berhasil diterima", "pay_succes")
+                    time.sleep(0.1)
+                    speak("silahkan atur ketinggian tumbler Anda dengan menekan tombol up dan down pada layar", "command_tumbler")
+                    time.sleep(0.1)
+                    speak("tekan tombol start untuk mulai pengisian air, dan tombol stop untuk berhenti", "command_fill")
+                    self.transaction_id = ''
+
+                # elif (r.json()['payment_status'] != 'pending'):
+                #     Clock.unschedule(self.payment_check)
+                #     toast("Pembayaran gagal, silahkan coba lagi")
+                #     speak("Maaf, pembayaran gagal, silahkan coba kembali", "pay_failed")
+                #     self.screen_manager.current = 'screen_choose_product'
+                #     print(r.json()['data']['payment_status'])
+                #     self.transaction_id = ''
+
+                    
+            except Exception as e:
+                # self.transaction_id = ''
+                print(e)
+            
+        else:
+            Clock.unschedule(self.payment_check)
+            toast("Pembayaran gagal, silahkan coba lagi")
+            speak("Maaf, pembayaran gagal, silahkan coba kembali", "pay_failed")
+            self.transaction_id = ''
+            self.screen_manager.current = 'screen_choose_product'
 
     def screen_choose_product(self):
         self.screen_manager.current = 'screen_choose_product'
+        Clock.unschedule(self.payment_check)
+
 
 class ScreenOperate(MDBoxLayout):
     screen_manager = ObjectProperty(None)
@@ -635,6 +659,7 @@ class ScreenQRPayment(MDBoxLayout):
         self.screen_manager.current = 'screen_choose_product'
 
     def dummy_success(self):
+        Clock.unschedule(self.payment_check)
         self.screen_manager.current = 'screen_operate' 
 
 class ScreenInfo(MDBoxLayout):
