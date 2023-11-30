@@ -9,6 +9,7 @@ from kivy.lang import Builder
 from kivy.core.window import Window
 from kivymd.uix.boxlayout import MDBoxLayout
 from kivymd.uix.card import MDCard
+from kivymd.uix.dialog import MDDialog
 from kivymd.uix.label import MDLabel
 from kivymd.uix.button import MDFlatButton
 from kivymd.uix.textfield import MDTextField
@@ -125,28 +126,12 @@ delay_before_auto_down = 150
 delay_waiting_auto_down = 50
 count_time_initiate = 0
 
-if (DEBUG) :
-    try :
-        r = requests.patch(SERVER + 'machines/' + MACHINE_CODE, data={
-            'status' : 'not_ready'            
-        })
-    except Exception as e:
-        print(e)
-
-# scanner = serial.Serial(baudrate=115200, port='COM3')
-# scanner.close()
-
-
 if(not DEBUG):
     # input declaration 
     in_sensor_proximity_bawah = Button(25)
     in_sensor_proximity_atas = Button(22)
     in_sensor_flow = DigitalInputDevice(19)
     in_machine_ready = DigitalInputDevice(27)
-
-    # qr scanner input
-    scanner = serial.Serial(baudrate=115200, port='/dev/ttyACM0')
-    scanner.close()
 
     # modbus communication of sensor declaration 
     mainTank = minimalmodbus.Instrument('/dev/ttyUSB0', 1)
@@ -351,8 +336,19 @@ class ScreenChooseProduct(MDBoxLayout):
         super(ScreenChooseProduct, self).__init__(**kwargs)
         Clock.schedule_interval(self.regular_check, .1)
         Clock.schedule_once(self.delayed_init)
-        scanner.open()
-        Clock.schedule_interval(self.scanner_read, .1)
+        self.dialog = MDDialog(
+                    title="Silahkan scan kode QR yang ada pada aplikasi Anda",
+                    md_bg_color='#CCCCCC',
+                    buttons=[
+                        MDFlatButton(
+                            text="CANCEL",
+                            theme_text_color= "Custom",
+                            md_bg_color = "#FF5252",
+                            text_color = "#E2E2E2",
+                            on_press = lambda a : self.dismiss_scan_dialog()
+                        )
+                    ],
+                )
 
     def delayed_init(self, *args):
         try :
@@ -384,33 +380,37 @@ class ScreenChooseProduct(MDBoxLayout):
                 )
             )
     
+    def show_scan_dialog(self):
+        self.dialog.open()
+    
+    def dismiss_scan_dialog(self):
+        self.dialog.dismiss()
+    
     def scanner_read(self, *args):
-        global COUPON, cold, product, scanner
+        global COUPON, cold, product
         # scan kupon QR CODE
         # if (True):
-        if (not DEBUG):
-            if (scanner.in_waiting>=1):
-                COUPON = str(scanner.read_until(b'\r'),'UTF-8')
-                if (COUPON):
-                    endpoint = f'{SERVER}transaction_by_code/{COUPON}'
-                    print(endpoint)
-                    try :
-                        r = requests.get(endpoint.strip())
+        COUPON = input()
+        if (COUPON):
+            endpoint = f'{SERVER}transaction_by_code/{COUPON}'
+            print(endpoint)
+            try :
+                r = requests.get(endpoint.strip())
 
-                        # toast(r.json().message)
-                        # print(r.json())
-                        cold = False if (r.json()['transaction_details'][0]['drink_type']=='regular') else True
-                        product = r.json()['transaction_details'][0]['size']
-                        print(cold, product)
-                        speak("Kupon diterima, silahkan operasikan mesin", "coupon_success")
-                        self.screen_manager.current = 'screen_operate'
+                # toast(r.json().message)
+                # print(r.json())
+                cold = False if (r.json()['transaction_details'][0]['drink_type']=='regular') else True
+                product = r.json()['transaction_details'][0]['size']
+                print(cold, product)
+                speak("Kupon diterima, silahkan operasikan mesin", "coupon_success")
+                self.screen_manager.current = 'screen_operate'
 
-                    except Exception as e:
-                        toast("Mohon maaf, kupon yang Anda masukkan tidak kami kenali")
-                        speak("Mohon maaf, kupon yang Anda masukkan tidak kami kenali", "coupon_failed")
-                        print(e)
+            except Exception as e:
+                toast("Mohon maaf, kupon yang Anda masukkan tidak kami kenali")
+                speak("Mohon maaf, kupon yang Anda masukkan tidak kami kenali", "coupon_failed")
+                print(e)
                     
-                    COUPON = False
+            COUPON = False
             
     def cold_mode(self, value):
         global cold
@@ -846,10 +846,4 @@ class WaterDispenserMachineApp(MDApp):
         return screen
 
 if __name__ == '__main__':
-    try:
-        WaterDispenserMachineApp().run()
-    except KeyboardInterrupt as interrupt:
-        print(interrupt)
-        print('masuk')
-        if (not DEBUG) : scanner.close()
-        exit()
+    WaterDispenserMachineApp().run()

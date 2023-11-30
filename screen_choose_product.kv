@@ -84,6 +84,15 @@
 			text: "INFO"
 			font_size: 28
 			size_hint: 0.4, 0.1
-			pos_hint: {"center_x": .8, "center_y": .1}
+			pos_hint: {"center_x": .78, "center_y": .1}
 			on_press: root.screen_info()
+		
+		MDFillRoundFlatIconButton:
+			id: bt_screen_info
+			icon: "qrcode-scan"
+			text: "Scan Kode QR"
+			font_size: 28
+			size_hint: 0.4, 0.1
+			pos_hint: {"center_x": -0.78, "center_y": .1}
+			on_press: root.show_scan_dialog()
 				
