@@ -4,15 +4,11 @@ import sys
 import os
 from kivymd.app import MDApp
 from kivymd.toast import toast
-from kivymd.uix.datatables import MDDataTable
 from kivy.lang import Builder
 from kivy.core.window import Window
 from kivymd.uix.boxlayout import MDBoxLayout
 from kivymd.uix.card import MDCard
-from kivymd.uix.dialog import MDDialog
 from kivymd.uix.label import MDLabel
-from kivymd.uix.button import MDFlatButton
-from kivymd.uix.textfield import MDTextField
 from kivymd.uix.relativelayout import MDRelativeLayout
 from kivy.uix.image import Image
 from kivy.clock import Clock
@@ -22,14 +18,11 @@ from datetime import datetime
 from pathlib import Path
 from kivy.properties import ObjectProperty
 from kivy.properties import StringProperty
-from gtts import gTTS
 import playsound
 import minimalmodbus
 import time
 import qrcode
 import requests
-import serial
-import asyncio
 
 from gpiozero import Button
 from gpiozero import DigitalInputDevice
@@ -104,8 +97,9 @@ linear_motor = False
 servo_open = False
 main_switch = True
 
-pulsePerLiter = 450
-pulsePerMiliLiter = 450/1000
+#spec -> 450 pulse per liter
+pulsePerLiter = 200
+pulsePerMiliLiter = pulsePerLiter/1000
 
 cold = False
 product = 0
@@ -115,10 +109,11 @@ pulse = 0
 levelMainTank = 0.0
 levelNormalTank = 0.0
 levelColdTank = 0.0
-maxMainTank = 1200.0
-maxNormalTank = 260.0
-maxColdTank = 195.0
+maxMainTank = 13000.0
+maxNormalTank = 300.0
+maxColdTank = 200.0
 qrSource = 'asset/qr_payment.png'
+payment_check = None
 
 fill_state = False
 fill_previous = False
@@ -162,12 +157,12 @@ if(not DEBUG):
     normalTank.clear_buffers_before_each_transaction = True
 
     # output declaration 
-    out_valve_cold = DigitalOutputDevice(20)
-    out_valve_normal = DigitalOutputDevice(26)
+    out_valve_cold = DigitalOutputDevice(26)
+    out_valve_normal = DigitalOutputDevice(20)
     out_pump_main = DigitalOutputDevice(21)
     out_pump_cold = DigitalOutputDevice(5)
     out_pump_normal = DigitalOutputDevice(6)
-    out_servo = AngularServo(12, initial_angle=0, min_angle=-90, max_angle=90, max_pulse_width=2.5/1000, min_pulse_width=0.5/1000)
+    out_servo = AngularServo(12, initial_angle=0, min_angle=-90, max_angle=90, max_pulse_width=2.5/1000, min_pulse_width=1/1000)
     out_motor_linear = Motor(9, 16)
 
     out_valve_cold.on() # on = close 
@@ -192,7 +187,7 @@ def speak(text, name):
         # tts = gTTS(text=text, lang='id', slow=False)
         filename = "asset/sound/"+ name + '.mp3'
         # tts.save(filename)
-        playsound.playsound(filename)
+        playsound.playsound(filename, False)
     except Exception as e:
         print("error play sound file", e)
 
@@ -292,25 +287,25 @@ class ScreenSplash(MDBoxLayout):
                 except Exception as e:                    
                     print(e)
                     
-            if (levelColdTank <=70):
+            if (levelColdTank <=55):
                 if (not DEBUG) : 
                     out_valve_cold.off()
                     out_pump_main.off()
             
-            if (levelNormalTank <=35):
+            if (levelNormalTank <=40):
                 if (not DEBUG) : 
                     out_valve_normal.off()
                     out_pump_main.off()
 
-            if (levelColdTank >= 85):
+            if (levelColdTank >= 65):
                 if (not DEBUG) : 
                     out_valve_cold.on()
                     out_pump_main.on()
 
-            if (levelNormalTank >= 85):
+            if (levelNormalTank >= 70):
                 if (not DEBUG) : 
                     out_valve_normal.on()
-                    out_pump_main.off()
+                    out_pump_main.on()
 
 class ScreenStandby(MDBoxLayout):
     screen_manager = ObjectProperty(None)
@@ -443,7 +438,7 @@ class ScreenChoosePayment(MDBoxLayout):
         super(ScreenChoosePayment, self).__init__(**kwargs)
 
     def pay(self, method):
-        global qr, qrSource, product, idProduct, cold, productPrice
+        global qr, qrSource, product, idProduct, cold, productPrice, payment_check
 
         print(method)
         if(method=="GOPAY"):
@@ -469,7 +464,7 @@ class ScreenChoosePayment(MDBoxLayout):
             # .... scheduling payment check
             self.n_payment_check = 0
             toast("Silahkan lakukan pembayaran, tunggu sesaat kami melakukan verifikasi")
-            Clock.schedule_interval(self.payment_check, 1)
+            payment_check = Clock.schedule_interval(self.payment_check, 1)
             speak("pembayaran melalui gopay dipilih, silahkan scan kode QR yang tampil dilayar pada aplikasi gojek Anda", "pay_gopay")
 
         elif(method=="QRIS"):
@@ -496,7 +491,7 @@ class ScreenChoosePayment(MDBoxLayout):
             
             self.n_payment_check = 0
             toast("Silahkan lakukan pembayaran, tunggu sesaat kami melakukan verifikasi")
-            Clock.schedule_interval(self.payment_check, 1)
+            payment_check = Clock.schedule_interval(self.payment_check, 1)
             speak("pembayaran melalui Qris dipilih, silahkan lakukan pembayaran dengan menggunakan kode QR yang ada pada layar", "pay_qris")
 
     def create_transaction(self, method, machine_code, product_id, product_size, qty, price, product_type, phone='-'):
@@ -675,7 +670,8 @@ class ScreenQRPayment(MDBoxLayout):
         self.screen_manager.current = 'screen_choose_product'
 
     def dummy_success(self):
-        Clock.unschedule(self.payment_check)
+        global payment_check
+        Clock.unschedule(payment_check)
         self.screen_manager.current = 'screen_operate' 
 
 class ScreenInfo(MDBoxLayout):
