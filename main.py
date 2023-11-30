@@ -336,19 +336,6 @@ class ScreenChooseProduct(MDBoxLayout):
         super(ScreenChooseProduct, self).__init__(**kwargs)
         Clock.schedule_interval(self.regular_check, .1)
         Clock.schedule_once(self.delayed_init)
-        self.dialog = MDDialog(
-                    title="Silahkan scan kode QR yang ada pada aplikasi Anda",
-                    md_bg_color='#CCCCCC',
-                    buttons=[
-                        MDFlatButton(
-                            text="CANCEL",
-                            theme_text_color= "Custom",
-                            md_bg_color = "#FF5252",
-                            text_color = "#E2E2E2",
-                            on_press = lambda a : self.dismiss_scan_dialog()
-                        )
-                    ],
-                )
 
     def delayed_init(self, *args):
         try :
@@ -380,37 +367,8 @@ class ScreenChooseProduct(MDBoxLayout):
                 )
             )
     
-    def show_scan_dialog(self):
-        self.dialog.open()
-    
-    def dismiss_scan_dialog(self):
-        self.dialog.dismiss()
-    
-    def scanner_read(self, *args):
-        global COUPON, cold, product
-        # scan kupon QR CODE
-        # if (True):
-        COUPON = input()
-        if (COUPON):
-            endpoint = f'{SERVER}transaction_by_code/{COUPON}'
-            print(endpoint)
-            try :
-                r = requests.get(endpoint.strip())
-
-                # toast(r.json().message)
-                # print(r.json())
-                cold = False if (r.json()['transaction_details'][0]['drink_type']=='regular') else True
-                product = r.json()['transaction_details'][0]['size']
-                print(cold, product)
-                speak("Kupon diterima, silahkan operasikan mesin", "coupon_success")
-                self.screen_manager.current = 'screen_operate'
-
-            except Exception as e:
-                toast("Mohon maaf, kupon yang Anda masukkan tidak kami kenali")
-                speak("Mohon maaf, kupon yang Anda masukkan tidak kami kenali", "coupon_failed")
-                print(e)
-                    
-            COUPON = False
+    def screen_scan_qr(self):
+        self.screen_manager.current = 'screen_scan_qr'
             
     def cold_mode(self, value):
         global cold
@@ -437,6 +395,46 @@ class ScreenChooseProduct(MDBoxLayout):
         else:
             self.ids.bt_cold.md_bg_color = "#09343C"
             self.ids.bt_normal.md_bg_color = "#3C9999"       
+
+class ScreenScanQr(MDBoxLayout):
+    screen_manager = ObjectProperty(None)
+
+    def __init__(self, **kwargs):
+        super(ScreenScanQr, self).__init__(**kwargs)
+        Clock.schedule_once(self.delayed_init)
+
+    def coupon_validate(self):
+        global COUPON, cold, product
+        # scan kupon QR CODE
+        # if (True):
+        COUPON = self.ids.coupon.text
+        if (COUPON):
+            endpoint = f'{SERVER}transaction_by_code/{COUPON}'
+            print(endpoint)
+            try :
+                r = requests.get(endpoint.strip())
+
+                # toast(r.json().message)
+                # print(r.json())
+                cold = False if (r.json()['transaction_details'][0]['drink_type']=='regular') else True
+                product = r.json()['transaction_details'][0]['size']
+                print(cold, product)
+                speak("Kupon diterima, silahkan operasikan mesin", "coupon_success")
+                self.screen_manager.current = 'screen_operate'
+
+            except Exception as e:
+                toast("Mohon maaf, kupon yang Anda masukkan tidak kami kenali")
+                speak("Mohon maaf, kupon yang Anda masukkan tidak kami kenali", "coupon_failed")
+                print(e)
+                    
+            COUPON = False
+            self.ids.coupon.text = ""
+    
+    def delayed_init(self, *args):
+        self.ids.coupon.focus = True
+
+    def screen_choose_product(self):
+        self.screen_manager.current = 'screen_choose_product'
 
 class ScreenChoosePayment(MDBoxLayout):
     screen_manager = ObjectProperty(None)
