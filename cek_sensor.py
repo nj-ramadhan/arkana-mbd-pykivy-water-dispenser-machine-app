@@ -1,16 +1,22 @@
 from gpiozero import Button
 from gpiozero import DigitalInputDevice
 
-in_sensor_proximity = Button(17)
-in_sensor_flow = DigitalInputDevice(19)
-in_limit_opened = Button(27)
-in_limit_closed = Button(22)
+in_sensor_proximity_bawah = DigitalInputDevice(25, pull_up=False) #pull_up=false mean pull_down
+in_sensor_proximity_atas = DigitalInputDevice(22, pull_up=False)
+in_sensor_flow = DigitalInputDevice(19, pull_up=False)
+in_machine_ready = DigitalInputDevice(27, pull_up=False)
 
-def proximityDown():
-    print("proximity is down")
+def proximityBawahDown():
+    print("proximity bawah is down")
 
-def proximityUp():
-    print("proximity is up")
+def proximityBawahUp():
+    print("proximity bawah is up")
+
+def proximityAtasDown():
+    print("proximity Atas is down")
+
+def proximityAtasUp():
+    print("proximity Atas is up")
 
 def flowDown():
     print("flow is down")
@@ -18,27 +24,13 @@ def flowDown():
 def flowUp():
     print("flow is up")
 
-def openDown():
-    print("open is down")
 
-def openUp():
-    print("open is up")
-
-def closeDown():
-    print("close is down")
-
-def closeUp():
-    print("close is up")
-
-
-in_limit_closed.when_activated = closeUp
-in_limit_closed.when_deactivated = closeDown
-in_limit_opened.when_activated = openUp
-in_limit_opened.when_deactivated = openDown
 in_sensor_flow.when_activated = flowUp
 in_sensor_flow.when_deactivated = flowDown
-in_sensor_proximity.when_activated = proximityUp
-in_sensor_proximity.when_deactivated = proximityDown
+in_sensor_proximity_bawah.when_activated = proximityBawahUp
+in_sensor_proximity_bawah.when_deactivated = proximityBawahDown
+in_sensor_proximity_atas.when_activated = proximityAtasUp
+in_sensor_proximity_atas.when_deactivated = proximityAtasDown
 
 while True :
     pass

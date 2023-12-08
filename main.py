@@ -107,6 +107,8 @@ idProduct = 0
 productPrice = 0
 pulse = 0
 levelMainTank = 0.0
+levelMainTankArray = []
+windowSize = 3
 levelNormalTank = 0.0
 levelColdTank = 0.0
 maxMainTank = 13000.0
@@ -123,10 +125,10 @@ count_time_initiate = 0
 
 if(not DEBUG):
     # input declaration 
-    in_sensor_proximity_bawah = Button(25)
-    in_sensor_proximity_atas = Button(22)
-    in_sensor_flow = DigitalInputDevice(19)
-    in_machine_ready = DigitalInputDevice(27)
+    in_sensor_proximity_bawah = DigitalInputDevice(25, pull_up=False) #pull_up=false mean pull_down
+    in_sensor_proximity_atas = DigitalInputDevice(22, pull_up=False)
+    in_sensor_flow = DigitalInputDevice(19, pull_up=False)
+    in_machine_ready = DigitalInputDevice(27, pull_up=False)
 
     # modbus communication of sensor declaration 
     mainTank = minimalmodbus.Instrument('/dev/ttyUSB0', 1)
@@ -155,6 +157,14 @@ if(not DEBUG):
     normalTank.serial.timeout = 0.5
     normalTank.mode = MODE
     normalTank.clear_buffers_before_each_transaction = True
+
+    read = mainTank.read_register(5,0,3,False)
+    # filter read value at 65535
+    while read >= 65500:
+        time.sleep(.1)
+        read = mainTank.read_register(5,0,3,False)
+
+    levelMainTankArray = [round(100 - (read * 100 / maxMainTank),2)]*windowSize
 
     # output declaration 
     out_valve_cold = DigitalOutputDevice(26)
@@ -236,13 +246,22 @@ class ScreenSplash(MDBoxLayout):
             return False
 
     def regular_check(self, *args):
-        global levelColdTank, levelMainTank, levelNormalTank, maxColdTank, maxMainTank, maxNormalTank, out_pump_main, out_valve_cold, out_valve_normal, in_machine_ready
+        global levelColdTank, levelMainTank, levelMainTankArray, levelNormalTank, maxColdTank, maxMainTank, maxNormalTank, out_pump_main, out_valve_cold, out_valve_normal, in_machine_ready
 
         # program for reading sensor end control system algorithm
         if(not DEBUG):
             try:
                 read = mainTank.read_register(5,0,3,False)
-                levelMainTank = round(100 - (read * 100 / maxMainTank),2)
+                # filter read value at 65535
+                while read >= 65500:
+                    time.sleep(.1)
+                    read = mainTank.read_register(5,0,3,False)
+
+                # create moving average of levelMainTank
+                levelMainTankArray.pop(0)
+                levelMainTankArray.append(round(100 - (read * 100 / maxMainTank),2))
+                levelMainTank = round(np.array(levelMainTankArray).mean(),2)
+
                 time.sleep(.1)
                 read = coldTank.read_register(0x0101,0,3,False)
                 levelColdTank = round(100 - (read * 100 / maxColdTank),2)
