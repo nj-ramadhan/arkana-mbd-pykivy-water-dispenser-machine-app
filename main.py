@@ -29,6 +29,7 @@ from gpiozero import DigitalInputDevice
 from gpiozero import Motor
 from gpiozero import DigitalOutputDevice
 from gpiozero import AngularServo
+from gpiozero import AngularServo
 
 qr = qrcode.QRCode(
     version=1,
@@ -116,6 +117,7 @@ maxNormalTank = 300.0
 maxColdTank = 200.0
 qrSource = 'asset/qr_payment.png'
 payment_check = None
+payment_check = None
 
 fill_state = False
 fill_previous = False
@@ -125,6 +127,10 @@ count_time_initiate = 0
 
 if(not DEBUG):
     # input declaration 
+    in_sensor_proximity_bawah = DigitalInputDevice(25, pull_up=False) #pull_up=false mean pull_down
+    in_sensor_proximity_atas = DigitalInputDevice(22, pull_up=False)
+    in_sensor_flow = DigitalInputDevice(19, pull_up=False)
+    in_machine_ready = DigitalInputDevice(27, pull_up=False)
     in_sensor_proximity_bawah = DigitalInputDevice(25, pull_up=False) #pull_up=false mean pull_down
     in_sensor_proximity_atas = DigitalInputDevice(22, pull_up=False)
     in_sensor_flow = DigitalInputDevice(19, pull_up=False)
@@ -158,6 +164,14 @@ if(not DEBUG):
     normalTank.mode = MODE
     normalTank.clear_buffers_before_each_transaction = True
 
+    read = mainTank.read_register(5,0,3,False)
+    # filter read value at 65535
+    while read >= 65500:
+        time.sleep(.1)
+        read = mainTank.read_register(5,0,3,False)
+
+    levelMainTankArray = [round(100 - (read * 100 / maxMainTank),2)]*windowSize
+
     try:
         read = mainTank.read_register(5,0,3,False)
     # filter read value at 65535
@@ -172,9 +186,12 @@ if(not DEBUG):
     # output declaration 
     out_valve_cold = DigitalOutputDevice(26)
     out_valve_normal = DigitalOutputDevice(20)
+    out_valve_cold = DigitalOutputDevice(26)
+    out_valve_normal = DigitalOutputDevice(20)
     out_pump_main = DigitalOutputDevice(21)
     out_pump_cold = DigitalOutputDevice(5)
     out_pump_normal = DigitalOutputDevice(6)
+    out_servo = AngularServo(12, initial_angle=0, min_angle=-90, max_angle=90, max_pulse_width=2.5/1000, min_pulse_width=1/1000)
     out_servo = AngularServo(12, initial_angle=0, min_angle=-90, max_angle=90, max_pulse_width=2.5/1000, min_pulse_width=1/1000)
     out_motor_linear = Motor(9, 16)
 
