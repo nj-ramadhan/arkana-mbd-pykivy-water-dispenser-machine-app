@@ -1,6 +1,5 @@
 #:kivy 2.1.0
-
-<ScreenChoosePayment>:
+<ScreenScanQr>:
     MDBoxLayout:
         orientation: "vertical"
 		# header layout
@@ -33,72 +32,62 @@
 			orientation: "vertical"
 			md_bg_color: app.theme_cls.primary_color
 			size_hint: 2, 0.1
-			padding:10
-			spacing:10
 
 			MDLabel:
-				text: "CHOOSE PAYMENT METHOD"
+				text: "PEMBELIAN DARI APLIKASI"
 				halign: 'center'
 				valign: 'middle'    
 				bold: True
 				font_size: 24
 				color: 1, 1, 1
 				size_hint_y: 0.1
-				
+
 		MDGridLayout:
 			id: layout_products
-			cols:3
+			cols:1
 			md_bg_color: app.theme_cls.accent_color
 			row_force_default: True
-			row_default_height: 200
-			size_hint: 2, 0.75
+			row_default_height: 100
+			size_hint: 2, 0.65
 			padding:20
 			spacing:20
 
-			MDCard:
-				id: payment_gopay
-				ripple_behavior: True
-				on_press: root.pay("GOPAY")
-
-				MDRelativeLayout:
-					Image:
-						source:'asset/Logo_Gopay.png'
-						pos_hint: {"center_x": .5, "center_y": .5}
-						size_hint_y: 0.75
-						allow_stretch: True 
-
-					MDLabel:
-						text: "GOPAY"
-						adaptive_size: True
-						pos: "12dp", "12dp"
-						bold: True
-
-
-			MDCard:
-				id: payment_direct
-				ripple_behavior: True
-				on_press: root.pay("QRIS")
-
-				MDRelativeLayout:
-					Image:
-						source:'asset/Logo_QRIS.png'
-						pos_hint: {"center_x": .5, "center_y": .5}
-						size_hint_y: 0.75
-						allow_stretch: True 
-
-					MDLabel:
-						text: "QRIS"
-						adaptive_size: True
-						pos: "12dp", "12dp"
-						bold: True
+            MDLabel:
+				text: "Silahkan Scan kode QR dari aplikasi Anda"
+				halign: 'center'
+				valign: 'middle'    
+				bold: True
+				font_size: 32
+            
+            AnchorLayout:
+                size_hint_y: None
+                MDIcon:
+                    icon: "qrcode-scan"
+                    font_size : 128
+                    halign: 'center'
+                    valign: 'middle'    
+            
+            AnchorLayout:
+                size_hint_y: None
+                MDTextField:
+                    hint_text: "Click disini, lalu scan kode QR Anda"
+                    id: coupon
+                    font_size: 12
+                    multiline: False
+                    # password: True
+                    opacity: 1.0
+                    size_hint_x: 0.2
+                    on_text_validate: root.coupon_validate()
 
 	MDRelativeLayout:
 		MDFillRoundFlatIconButton:
-			id: bt_screen_choose_product
+			id: bt_cancel
 			icon: "cancel"
 			text: "CANCEL"
 			font_size: 28
 			size_hint: 0.4, 0.1
 			pos_hint: {"center_x": .78, "center_y": .1}
 			on_press: root.screen_choose_product()
+
+			
 				

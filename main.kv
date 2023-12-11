@@ -9,6 +9,7 @@
 #:include screen_operate.kv
 #:include screen_maintenance.kv
 #:include screen_qr_payment.kv
+#:include screen_scan_qr.kv
 
 ScreenManager:
     id: screen_manager
@@ -59,5 +60,11 @@ ScreenManager:
         name: 'screen_maintenance'
         ScreenMaintenance:
             id: screen_maintenance
+            screen_manager: screen_manager                  
+
+    Screen:
+        name: 'screen_scan_qr'
+        ScreenScanQr:
+            id: screen_scan_qr
             screen_manager: screen_manager                  
 
