@@ -145,16 +145,16 @@ if(not DEBUG):
     out_pump_normal.off()
     out_motor_linear.stop()
     
-    if (not in_machine_ready):
+    if (not in_machine_ready.value):
         logging.critical("PLEASE PRESS THE START BUTTON TO CONTINUE")
         logging.critical("PLEASE PRESS THE START BUTTON TO CONTINUE")
         logging.critical("PLEASE PRESS THE START BUTTON TO CONTINUE")
         logging.critical("PLEASE PRESS THE START BUTTON TO CONTINUE")
         logging.critical("PLEASE PRESS THE START BUTTON TO CONTINUE")
-        while not in_machine_ready:
+        while not in_machine_ready.value:
             pass
 
-if (not DEBUG):
+    
     # modbus communication of sensor declaration 
     mainTank = minimalmodbus.Instrument('/dev/ttyUSB0', 1)
     mainTank.serial.baudrate = BAUDRATE
@@ -183,6 +183,9 @@ if (not DEBUG):
     normalTank.mode = MODE
     normalTank.clear_buffers_before_each_transaction = True
     
+    time.sleep(5)
+
+# if (not DEBUG):
     try:
         read = mainTank.read_register(5,0,3,False)
     # filter read value at 65535
@@ -194,7 +197,7 @@ if (not DEBUG):
     except Exception as e:
         print(e)
         
-    if (not in_machine_ready):
+    if (not in_machine_ready.value):
         main_switch = False
         try :
             r = requests.patch(SERVER + 'machines/' + MACHINE_CODE, data={
@@ -285,7 +288,7 @@ class ScreenSplash(MDBoxLayout):
         
         # Tank mechanism
         if (not MAINTENANCE):
-            if (not in_machine_ready):
+            if (not in_machine_ready.value):
                 try :
                     r = requests.patch(SERVER + 'machines/' + MACHINE_CODE, data={
                         'status' : 'not_ready'
@@ -658,10 +661,7 @@ class ScreenOperate(MDBoxLayout):
             fill_previous = True
 
             if (pulse <= pulsePerMiliLiter * product):
-#                 if (in_sensor_proximity_atas or in_sensor_proximity_bawah):
-
-                # if (True) :
-                if (in_sensor_proximity_atas):
+                if (in_sensor_proximity_atas.value or in_sensor_proximity_bawah.value):
                     out_servo.angle = 90
                     servo_open = True
                     out_pump_cold.on() if (cold) else out_pump_normal.on()
