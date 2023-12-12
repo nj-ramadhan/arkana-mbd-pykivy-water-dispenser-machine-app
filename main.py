@@ -23,12 +23,11 @@ import minimalmodbus
 import time
 import qrcode
 import requests
+import logging
 
-from gpiozero import Button
 from gpiozero import DigitalInputDevice
 from gpiozero import Motor
 from gpiozero import DigitalOutputDevice
-from gpiozero import AngularServo
 from gpiozero import AngularServo
 
 qr = qrcode.QRCode(
@@ -117,7 +116,6 @@ maxNormalTank = 300.0
 maxColdTank = 200.0
 qrSource = 'asset/qr_payment.png'
 payment_check = None
-payment_check = None
 
 fill_state = False
 fill_previous = False
@@ -131,11 +129,32 @@ if(not DEBUG):
     in_sensor_proximity_atas = DigitalInputDevice(22, pull_up=False)
     in_sensor_flow = DigitalInputDevice(19, pull_up=False)
     in_machine_ready = DigitalInputDevice(27, pull_up=False)
-    in_sensor_proximity_bawah = DigitalInputDevice(25, pull_up=False) #pull_up=false mean pull_down
-    in_sensor_proximity_atas = DigitalInputDevice(22, pull_up=False)
-    in_sensor_flow = DigitalInputDevice(19, pull_up=False)
-    in_machine_ready = DigitalInputDevice(27, pull_up=False)
 
+    # output declaration 
+    out_valve_cold = DigitalOutputDevice(26)
+    out_valve_normal = DigitalOutputDevice(20)
+    out_pump_main = DigitalOutputDevice(21)
+    out_pump_cold = DigitalOutputDevice(5)
+    out_pump_normal = DigitalOutputDevice(6)
+    out_servo = AngularServo(12, initial_angle=0, min_angle=-90, max_angle=90, max_pulse_width=2.5/1000, min_pulse_width=1/1000)
+    out_motor_linear = Motor(9, 16)
+
+    out_valve_cold.on() # on = close 
+    out_valve_normal.on()
+    out_pump_main.on()
+    out_pump_normal.off()
+    out_motor_linear.stop()
+    
+    if (not in_machine_ready):
+        logging.critical("PLEASE PRESS THE START BUTTON TO CONTINUE")
+        logging.critical("PLEASE PRESS THE START BUTTON TO CONTINUE")
+        logging.critical("PLEASE PRESS THE START BUTTON TO CONTINUE")
+        logging.critical("PLEASE PRESS THE START BUTTON TO CONTINUE")
+        logging.critical("PLEASE PRESS THE START BUTTON TO CONTINUE")
+        while not in_machine_ready:
+            pass
+
+if (not DEBUG):
     # modbus communication of sensor declaration 
     mainTank = minimalmodbus.Instrument('/dev/ttyUSB0', 1)
     mainTank.serial.baudrate = BAUDRATE
@@ -163,15 +182,7 @@ if(not DEBUG):
     normalTank.serial.timeout = 0.5
     normalTank.mode = MODE
     normalTank.clear_buffers_before_each_transaction = True
-
-    read = mainTank.read_register(5,0,3,False)
-    # filter read value at 65535
-    while read >= 65500:
-        time.sleep(.1)
-        read = mainTank.read_register(5,0,3,False)
-
-    levelMainTankArray = [round(100 - (read * 100 / maxMainTank),2)]*windowSize
-
+    
     try:
         read = mainTank.read_register(5,0,3,False)
     # filter read value at 65535
@@ -182,27 +193,7 @@ if(not DEBUG):
         levelMainTankArray = [round(100 - (read * 100 / maxMainTank),2)] * windowSize
     except Exception as e:
         print(e)
-
-    # output declaration 
-    out_valve_cold = DigitalOutputDevice(26)
-    out_valve_normal = DigitalOutputDevice(20)
-    out_valve_cold = DigitalOutputDevice(26)
-    out_valve_normal = DigitalOutputDevice(20)
-    out_pump_main = DigitalOutputDevice(21)
-    out_pump_cold = DigitalOutputDevice(5)
-    out_pump_normal = DigitalOutputDevice(6)
-    out_servo = AngularServo(12, initial_angle=0, min_angle=-90, max_angle=90, max_pulse_width=2.5/1000, min_pulse_width=1/1000)
-    out_servo = AngularServo(12, initial_angle=0, min_angle=-90, max_angle=90, max_pulse_width=2.5/1000, min_pulse_width=1/1000)
-    out_motor_linear = Motor(9, 16)
-
-    out_valve_cold.on() # on = close 
-    out_valve_normal.on()
-    out_pump_main.on()
-    out_pump_normal.off()
-    out_pump_normal.off()
-    out_motor_linear.stop()
-
-if (not DEBUG):
+        
     if (not in_machine_ready):
         main_switch = False
         try :
@@ -269,36 +260,7 @@ class ScreenSplash(MDBoxLayout):
         global levelColdTank, levelMainTank, levelMainTankArray, levelNormalTank, maxColdTank, maxMainTank, maxNormalTank, out_pump_main, out_valve_cold, out_valve_normal, in_machine_ready
 
         # program for reading sensor end control system algorithm        
-        if(not DEBUG):
-            
-            # modbus communication of sensor declaration 
-            mainTank = minimalmodbus.Instrument('/dev/ttyUSB0', 1)
-            mainTank.serial.baudrate = BAUDRATE
-            mainTank.serial.bytesize = BYTESIZES
-            mainTank.serial.parity = PARITY
-            mainTank.serial.stopbits = STOPBITS
-            mainTank.serial.timeout = 0.5
-            mainTank.mode = MODE
-            mainTank.clear_buffers_before_each_transaction = True
-
-            coldTank = minimalmodbus.Instrument('/dev/ttyUSB0', 2)
-            coldTank.serial.baudrate = BAUDRATE
-            coldTank.serial.bytesize = BYTESIZES
-            coldTank.serial.parity = PARITY
-            coldTank.serial.stopbits = STOPBITS
-            coldTank.serial.timeout = 0.5
-            coldTank.mode = MODE
-            coldTank.clear_buffers_before_each_transaction = True
-
-            normalTank = minimalmodbus.Instrument('/dev/ttyUSB0', 3)
-            normalTank.serial.baudrate = BAUDRATE
-            normalTank.serial.bytesize = BYTESIZES
-            normalTank.serial.parity = PARITY
-            normalTank.serial.stopbits = STOPBITS
-            normalTank.serial.timeout = 0.5
-            normalTank.mode = MODE
-            normalTank.clear_buffers_before_each_transaction = True
-            
+        if(not DEBUG):           
             try:
                 read = mainTank.read_register(5,0,3,False)
                 # filter read value at 65535
