@@ -125,10 +125,10 @@ count_time_initiate = 0
 
 if(not DEBUG):
     # input declaration 
-    in_sensor_proximity_bawah = DigitalInputDevice(25, pull_up=False) #pull_up=false mean pull_down
-    in_sensor_proximity_atas = DigitalInputDevice(22, pull_up=False)
+    in_sensor_proximity_bawah = DigitalInputDevice(27, pull_up=None, active_state=False, bounce_time=.01) #pull_up=false mean pull_down
+    in_sensor_proximity_atas = DigitalInputDevice(22, pull_up=None, active_state=False, bounce_time=.01)
     in_sensor_flow = DigitalInputDevice(19, pull_up=False)
-    in_machine_ready = DigitalInputDevice(27, pull_up=False)
+    in_machine_ready = DigitalInputDevice(17, pull_up=False, bounce_time=.01)
 
     # output declaration 
     out_valve_cold = DigitalOutputDevice(26)
