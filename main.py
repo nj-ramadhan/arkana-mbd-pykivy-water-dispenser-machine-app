@@ -242,6 +242,7 @@ class ScreenSplash(MDBoxLayout):
         super(ScreenSplash, self).__init__(**kwargs)
         Clock.schedule_interval(self.update_progress_bar, .01)
         Clock.schedule_interval(self.regular_check, 5)
+        Clock.schedule_interval(self.main_tank_read, .5)
 
     def update_progress_bar(self, *args):
         if (self.ids.progress_bar.value + 1) < 100:
@@ -258,8 +259,8 @@ class ScreenSplash(MDBoxLayout):
             self.screen_manager.current = 'screen_standby'
             return False
 
-    def regular_check(self, *args):
-        global levelColdTank, levelMainTank, levelMainTankArray, levelNormalTank, maxColdTank, maxMainTank, maxNormalTank, out_pump_main, out_valve_cold, out_valve_normal, in_machine_ready
+    def main_tank_read(self, *args):
+        global levelMainTank, levelMainTankArray, maxMainTank
 
         # program for reading sensor end control system algorithm        
         if(not DEBUG):           
@@ -274,6 +275,26 @@ class ScreenSplash(MDBoxLayout):
                 levelMainTankArray.pop(0)
                 levelMainTankArray.append(round(100 - (read * 100 / maxMainTank),2))
                 levelMainTank = round(np.array(levelMainTankArray).mean(),2)
+                
+            except Exception as e:
+                print(e)
+
+    def regular_check(self, *args):
+        global levelColdTank, levelMainTank, levelMainTankArray, levelNormalTank, maxColdTank, maxMainTank, maxNormalTank, out_pump_main, out_valve_cold, out_valve_normal, in_machine_ready
+
+        # program for reading sensor end control system algorithm        
+        if(not DEBUG):           
+            try:
+                # read = mainTank.read_register(5,0,3,False)
+                # # filter read value at 65535
+                # while read >= 65500:
+                #     time.sleep(.1)
+                #     read = mainTank.read_register(5,0,3,False)
+
+                # # create moving average of levelMainTank
+                # levelMainTankArray.pop(0)
+                # levelMainTankArray.append(round(100 - (read * 100 / maxMainTank),2))
+                # levelMainTank = round(np.array(levelMainTankArray).mean(),2)
 
                 time.sleep(.1)
                 read = coldTank.read_register(0x0101,0,3,False)
