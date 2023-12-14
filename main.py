@@ -74,7 +74,7 @@ colors = {
 }
 
 MAINTENANCE= True
-DEBUG = True
+DEBUG = False
 COUPON = False
 PASSWORD = "KYP001"
 SERVER = 'https://app.kickyourplast.com/api/'
@@ -98,7 +98,7 @@ servo_open = False
 main_switch = True
 
 #spec -> 450 pulse per liter
-pulsePerLiter = 402
+pulsePerLiter = 430
 pulsePerMiliLiter = pulsePerLiter/1000
 
 cold = False
@@ -127,7 +127,7 @@ if(not DEBUG):
     # input declaration 
     in_sensor_proximity_bawah = DigitalInputDevice(27, pull_up=None, active_state=False, bounce_time=.01) #pull_up=false mean pull_down
     in_sensor_proximity_atas = DigitalInputDevice(22, pull_up=None, active_state=False, bounce_time=.01)
-    in_sensor_flow = DigitalInputDevice(19, pull_up=False)
+    in_sensor_flow = DigitalInputDevice(19, pull_up=False, bounce_time=.007)
     in_machine_ready = DigitalInputDevice(17, pull_up=False, bounce_time=.01)
 
     # output declaration 
@@ -367,7 +367,7 @@ class ScreenChooseProduct(MDBoxLayout):
 
     def delayed_init(self, *args):
         try :
-            r = requests.get(SERVER + 'products', {all : True})
+            r = requests.get(SERVER + 'products', {"is_featured" : "1"})
             self.products = r.json()['data']
         except Exception as e:
             print(e)
@@ -430,6 +430,7 @@ class ScreenScanQr(MDBoxLayout):
     def __init__(self, **kwargs):
         super(ScreenScanQr, self).__init__(**kwargs)
         Clock.schedule_once(self.delayed_init)
+        Clock.schedule_interval(self.regular_check, 3)
 
     def coupon_validate(self):
         global COUPON, cold, product
@@ -437,29 +438,52 @@ class ScreenScanQr(MDBoxLayout):
         # if (True):
         COUPON = self.ids.coupon.text
         if (COUPON):
-            endpoint = f'{SERVER}transaction_by_code/{COUPON}'
-            print(endpoint)
             try :
-                r = requests.get(endpoint.strip())
+                r = requests.post(SERVER + 'transactions/' + COUPON + '/used_machine', data={
+                    'machine_code' : MACHINE_CODE
+                })
 
-                # toast(r.json().message)
-                # print(r.json())
-                cold = False if (r.json()['transaction_details'][0]['drink_type']=='regular') else True
-                product = r.json()['transaction_details'][0]['size']
-                print(cold, product)
-                speak("Kupon diterima, silahkan operasikan mesin", "coupon_success")
-                self.screen_manager.current = 'screen_operate'
+                status = r.json()['status']
+                status = r.json()['status']
+                message = r.json()['message']
+
+                print(status, message)
+                toast(message)
+        #        speak(message, "coupon_failed")
+
+                if (status == "success"):
+                    endpoint = f'{SERVER}transaction_by_code/{COUPON}'
+                    print(endpoint)
+
+                    r = requests.get(endpoint.strip())
+
+                    cold = False if (r.json()['transaction_details'][0]['drink_type']=='regular') else True
+                    product = r.json()['transaction_details'][0]['size']
+                    print(cold, product)
+                    speak("Kupon diterima, silahkan operasikan mesin", "coupon_success")
+                    self.screen_manager.current = 'screen_operate'
+
+                else:
+                    toast(message)
+    #                toast("Mohon maaf, kupon yang Anda masukkan tidak kami kenali")
+         #           speak("Mohon maaf, kupon yang Anda masukkan tidak kami kenali", "coupon_failed")
+           #         print(e)
 
             except Exception as e:
-                toast("Mohon maaf, kupon yang Anda masukkan tidak kami kenali")
-                speak("Mohon maaf, kupon yang Anda masukkan tidak kami kenali", "coupon_failed")
-                print(e)
+                toast(message)
+          #      speak("Mohon maaf, kupon yang Anda masukkan tidak kami kenali", "coupon_failed")
+            #    print(e)
                     
             COUPON = False
             self.ids.coupon.text = ""
     
     def delayed_init(self, *args):
         self.ids.coupon.focus = True
+
+    def regular_check(self, *args):
+        if(self.screen_manager.current == 'screen_scan_qr'):
+            self.ids.coupon.focus = True
+
 
     def screen_choose_product(self):
         self.screen_manager.current = 'screen_choose_product'
