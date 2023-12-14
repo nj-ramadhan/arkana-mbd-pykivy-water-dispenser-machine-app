@@ -74,7 +74,7 @@ colors = {
 }
 
 MAINTENANCE= True
-DEBUG = False
+DEBUG = True
 COUPON = False
 PASSWORD = "KYP001"
 SERVER = 'https://app.kickyourplast.com/api/'
@@ -108,10 +108,10 @@ productPrice = 0
 pulse = 0
 levelMainTank = 0.0
 levelMainTankArray = []
-windowSize = 4
+windowSize = 10
 levelNormalTank = 0.0
 levelColdTank = 0.0
-maxMainTank = 13000.0
+maxMainTank = 15000.0
 maxNormalTank = 300.0
 maxColdTank = 200.0
 qrSource = 'asset/qr_payment.png'
@@ -185,7 +185,6 @@ if(not DEBUG):
     
     time.sleep(5)
 
-# if (not DEBUG):
     try:
         read = mainTank.read_register(5,0,3,False)
     # filter read value at 65535
@@ -211,7 +210,7 @@ def speak(text, name):
         # tts = gTTS(text=text, lang='id', slow=False)
         filename = "asset/sound/"+ name + '.mp3'
         # tts.save(filename)
-        playsound.playsound(filename, False)
+        # playsound.playsound(filename, False)
     except Exception as e:
         print("error play sound file", e)
 
@@ -377,16 +376,22 @@ class ScreenChooseProduct(MDBoxLayout):
                 MDCard(
                     MDRelativeLayout(
                         Image(
-                            source = 'asset/' + str(p['size_in_ml'])+'ml.png',
-                            # source = 'asset/330ml.png',
+                            # source = 'asset/' + str(p['size_in_ml'])+'ml.png',
+                            source = 'asset/350ml.png',
                             pos_hint = {"center_x": .5, "center_y": .5},
                             allow_stretch = True
                         ),
                         MDLabel(
                             text = str(p['size_in_ml'])+'ml',
                             adaptive_size= True,
-						    pos= ["12dp", "12dp"],
+						    pos= ["12dp", "28dp"],
 						    bold= True
+                        ),
+                        MDLabel(
+                            text = 'Rp. '+str(p['price']),
+                            adaptive_size= True,
+						    pos= ["12dp", "12dp"],
+						    # bold= True
                         )
                     ),
                     id = str(p['id']),
@@ -408,9 +413,10 @@ class ScreenChooseProduct(MDBoxLayout):
         product = size
         idProduct = id
         productPrice = price
-        print(idProduct,type(idProduct))
-        print(product,type(product))
-        print(productPrice,type(productPrice))
+        toast("Choose your payment method")
+        # print(idProduct,type(idProduct))
+        # print(product,type(product))
+        # print(productPrice,type(productPrice))
 
     def screen_info(self):
         self.screen_manager.current = 'screen_info'
@@ -444,12 +450,12 @@ class ScreenScanQr(MDBoxLayout):
                 })
 
                 status = r.json()['status']
-                status = r.json()['status']
                 message = r.json()['message']
 
-                print(status, message)
-                toast(message)
-        #        speak(message, "coupon_failed")
+                # print(status, message)
+                # toast("Pembayaran berhasil! Silahkan atur ketinggian tumbler lau tekan tombol Start")
+                # toast(message)
+                # speak(message, "coupon_failed")
 
                 if (status == "success"):
                     endpoint = f'{SERVER}transaction_by_code/{COUPON}'
@@ -459,8 +465,10 @@ class ScreenScanQr(MDBoxLayout):
 
                     cold = False if (r.json()['transaction_details'][0]['drink_type']=='regular') else True
                     product = r.json()['transaction_details'][0]['size']
-                    print(cold, product)
-                    speak("Kupon diterima, silahkan operasikan mesin", "coupon_success")
+                    # print(cold, product)
+                    # toast(r.json()['message'])
+                    toast("Success! Fit your tumbler then press Start")
+                    # speak("Kupon diterima, silahkan operasikan mesin", "coupon_success")
                     self.screen_manager.current = 'screen_operate'
 
                 else:
@@ -520,7 +528,7 @@ class ScreenChoosePayment(MDBoxLayout):
 
             # .... scheduling payment check
             self.n_payment_check = 0
-            toast("Silahkan lakukan pembayaran, tunggu sesaat kami melakukan verifikasi")
+            toast("Please pay, and wait for us to verify")
             payment_check = Clock.schedule_interval(self.payment_check, 1)
             speak("pembayaran melalui gopay dipilih, silahkan scan kode QR yang tampil dilayar pada aplikasi gojek Anda", "pay_gopay")
 
@@ -547,7 +555,7 @@ class ScreenChoosePayment(MDBoxLayout):
             self.screen_manager.current = 'screen_qr_payment'
             
             self.n_payment_check = 0
-            toast("Silahkan lakukan pembayaran, tunggu sesaat kami melakukan verifikasi")
+            toast("Please pay, and wait for us to verify")
             payment_check = Clock.schedule_interval(self.payment_check, 1)
             speak("pembayaran melalui Qris dipilih, silahkan lakukan pembayaran dengan menggunakan kode QR yang ada pada layar", "pay_qris")
 
@@ -586,9 +594,9 @@ class ScreenChoosePayment(MDBoxLayout):
                 
                 if (r.json()['payment_status'] == 'settlement'):
                     Clock.unschedule(self.payment_check)
-                    toast('payment success')
+                    # toast('payment success')
                     self.screen_manager.current = 'screen_operate'
-                    toast("Pembayaran berhasil!")
+                    toast("Success! Fit your tumbler then press Start")
                     speak("Terima kasih, pembayaran berhasil diterima", "pay_succes")
                     time.sleep(0.1)
                     speak("silahkan atur ketinggian tumbler Anda dengan menekan tombol up dan down pada layar", "command_tumbler")
@@ -611,7 +619,7 @@ class ScreenChoosePayment(MDBoxLayout):
             
         else:
             Clock.unschedule(self.payment_check)
-            toast("Pembayaran gagal, silahkan coba lagi")
+            toast("Payment failed, please try again")
             speak("Maaf, pembayaran gagal, silahkan coba kembali", "pay_failed")
             self.transaction_id = ''
             self.screen_manager.current = 'screen_choose_product'
@@ -633,14 +641,14 @@ class ScreenOperate(MDBoxLayout):
 
         self.ids.bt_up.md_bg_color = "#3C9999"
         if (not DEBUG) : out_motor_linear.forward()
-        toast("tumbler base is going up")
+        # toast("tumbler base is going up")
 
     def act_down(self):
         global linear_motor, out_motor_linear
 
         self.ids.bt_down.md_bg_color = "#3C9999"
         if (not DEBUG) : out_motor_linear.backward()
-        toast("tumbler base is going down")
+        # toast("tumbler base is going down")
 
     def act_stop(self):
         global linear_motor, out_motor_linear
@@ -723,11 +731,14 @@ class ScreenQRPayment(MDBoxLayout):
         self.ids.image_qr_payment.reload()
 
     def cancel(self):
+        global payment_check
+        Clock.unschedule(payment_check)
         self.screen_manager.current = 'screen_choose_product'
 
     def dummy_success(self):
         global payment_check
         Clock.unschedule(payment_check)
+        toast("Success! Fit your tumbler then press Start")
         self.screen_manager.current = 'screen_operate' 
 
 class ScreenInfo(MDBoxLayout):
