@@ -74,7 +74,7 @@ colors = {
 }
 
 MAINTENANCE= True
-DEBUG = True
+DEBUG = False
 COUPON = False
 PASSWORD = "KYP001"
 SERVER = 'https://app.kickyourplast.com/api/'
@@ -98,7 +98,7 @@ servo_open = False
 main_switch = True
 
 #spec -> 450 pulse per liter
-pulsePerLiter = 430
+pulsePerLiter =141
 pulsePerMiliLiter = pulsePerLiter/1000
 
 cold = False
@@ -108,10 +108,10 @@ productPrice = 0
 pulse = 0
 levelMainTank = 0.0
 levelMainTankArray = []
-windowSize = 10
+windowSize = 200
 levelNormalTank = 0.0
 levelColdTank = 0.0
-maxMainTank = 15000.0
+maxMainTank = 7000.0
 maxNormalTank = 300.0
 maxColdTank = 200.0
 qrSource = 'asset/qr_payment.png'
@@ -127,7 +127,7 @@ if(not DEBUG):
     # input declaration 
     in_sensor_proximity_bawah = DigitalInputDevice(27, pull_up=None, active_state=False, bounce_time=.01) #pull_up=false mean pull_down
     in_sensor_proximity_atas = DigitalInputDevice(22, pull_up=None, active_state=False, bounce_time=.01)
-    in_sensor_flow = DigitalInputDevice(19, pull_up=False, bounce_time=.007)
+    in_sensor_flow = DigitalInputDevice(19, pull_up=None, active_state=False)
     in_machine_ready = DigitalInputDevice(17, pull_up=False, bounce_time=.01)
 
     # output declaration 
@@ -186,13 +186,15 @@ if(not DEBUG):
     time.sleep(5)
 
     try:
-        read = mainTank.read_register(5,0,3,False)
-    # filter read value at 65535
-        while read >= 65500:
+        for i in range(windowSize):
             time.sleep(.1)
             read = mainTank.read_register(5,0,3,False)
+    # filter read value at 65535
+            while read >= 65500:
+                time.sleep(.1)
+                read = mainTank.read_register(5,0,3,False)
 
-        levelMainTankArray = [round(100 - (read * 100 / maxMainTank),2)] * windowSize
+            levelMainTankArray.append(round(100 - (read * 100 / maxMainTank),2))
     except Exception as e:
         print(e)
         
@@ -230,6 +232,7 @@ def machine_ready():
 def count_pulse():
     global pulse
     pulse +=1
+    print(pulse)
 
 if (not DEBUG) : in_machine_ready.when_activated = machine_ready
 if (not DEBUG) : in_sensor_flow.when_activated = count_pulse 
@@ -274,7 +277,7 @@ class ScreenSplash(MDBoxLayout):
                 # create moving average of levelMainTank
                 levelMainTankArray.pop(0)
                 levelMainTankArray.append(round(100 - (read * 100 / maxMainTank),2))
-                levelMainTank = round(np.array(levelMainTankArray).mean(),2)
+                #levelMainTank = round(np.array(levelMainTankArray).mean(),2)
                 
             except Exception as e:
                 print(e)
@@ -294,7 +297,7 @@ class ScreenSplash(MDBoxLayout):
                 # # create moving average of levelMainTank
                 # levelMainTankArray.pop(0)
                 # levelMainTankArray.append(round(100 - (read * 100 / maxMainTank),2))
-                # levelMainTank = round(np.array(levelMainTankArray).mean(),2)
+                levelMainTank = round(np.array(levelMainTankArray).mean(),2)
 
                 time.sleep(.1)
                 read = coldTank.read_register(0x0101,0,3,False)
