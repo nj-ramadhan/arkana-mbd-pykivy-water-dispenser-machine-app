@@ -74,7 +74,7 @@ colors = {
 }
 
 MAINTENANCE= True
-DEBUG = False
+DEBUG = True
 COUPON = False
 PASSWORD = "KYP001"
 SERVER = 'https://app.kickyourplast.com/api/'
@@ -800,6 +800,13 @@ class ScreenMaintenance(MDBoxLayout):
     def __init__(self, **kwargs):
         super(ScreenMaintenance, self).__init__(**kwargs)
         Clock.schedule_interval(self.regular_check, .1)
+    
+    def act_maintenance(self):
+        global MAINTENANCE
+        if (MAINTENANCE):
+            MAINTENANCE = False            
+        else:
+            MAINTENANCE = True
 
     def act_valve_cold(self):
         global valve_cold, out_valve_cold
@@ -883,13 +890,16 @@ class ScreenMaintenance(MDBoxLayout):
         self.screen_manager.current = 'screen_choose_product'
 
     def regular_check(self, *args):
-        global levelColdTank, levelMainTank, levelNormalTank
+        global levelColdTank, levelMainTank, levelNormalTank, MAINTENANCE
 
         self.ids.lb_level_main.text = f"{levelMainTank} %"
         self.ids.lb_level_cold.text = f"{levelColdTank} %"
         self.ids.lb_level_normal.text = f"{levelNormalTank} %"
 
         # program for displaying IO condition        
+        if (MAINTENANCE): self.ids.bt_maintenance.md_bg_color = "#3C9999"
+        else: self.ids.bt_maintenance.md_bg_color = "#09343C"
+
         if (valve_cold): self.ids.bt_valve_cold.md_bg_color = "#3C9999"
         else: self.ids.bt_valve_cold.md_bg_color = "#09343C"
 
