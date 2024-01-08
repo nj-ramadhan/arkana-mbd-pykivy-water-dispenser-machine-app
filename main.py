@@ -74,7 +74,7 @@ colors = {
 }
 
 MAINTENANCE= True
-DEBUG = True
+DEBUG = False
 COUPON = False
 PASSWORD = "KYP001"
 SERVER = 'https://app.kickyourplast.com/api/'
@@ -701,6 +701,7 @@ class ScreenOperate(MDBoxLayout):
         if (not DEBUG) :
             out_pump_cold.off()
             out_pump_normal.off()
+            time.sleep(.5)
             out_servo.angle = 0
 
         print("fill stop")
@@ -720,12 +721,14 @@ class ScreenOperate(MDBoxLayout):
                 if (in_sensor_proximity_atas.value or in_sensor_proximity_bawah.value):
                     out_servo.angle = 90
                     servo_open = True
+                    time.sleep(.5)
                     out_pump_cold.on() if (cold) else out_pump_normal.on()
                 else :
                     out_servo.angle = 0
-                    servo_open = False
                     out_pump_cold.off()
                     out_pump_normal.off()
+                    time.sleep(.5)
+                    servo_open = False
                     toast("please put your tumbler")
                     speak("mohon letakkan tumbler Anda", "put_tumbler")
 
