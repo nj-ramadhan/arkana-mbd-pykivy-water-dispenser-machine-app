@@ -43,7 +43,7 @@ colors = {
     "Dark": {"StatusBar": "#101010","AppBar": "#E0E0E0","Background": "#111111","CardsDialogs": "#000000","FlatButtonDown": "#333333",},
 }
 
-MAINTENANCE= True
+MAINTENANCE= False
 DEBUG = False
 COUPON = False
 PASSWORD = "KYP001"
