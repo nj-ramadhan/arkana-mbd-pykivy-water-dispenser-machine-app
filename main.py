@@ -43,9 +43,7 @@ colors = {
     "Dark": {"StatusBar": "#101010","AppBar": "#E0E0E0","Background": "#111111","CardsDialogs": "#000000","FlatButtonDown": "#333333",},
 }
 
-MAINTENANCE= False
 DEBUG = False
-COUPON = False
 PASSWORD = "KYP001"
 SERVER = 'https://app.kickyourplast.com/api/'
 MACHINE_CODE = 'KYP001'
@@ -58,6 +56,8 @@ TIMEOUT = 0.5
 PARITY = minimalmodbus.serial.PARITY_NONE
 MODE = minimalmodbus.MODE_RTU
 
+text_coupon = False
+flag_maintenance= False
 valve_cold = False
 valve_normal = False
 pump_main = False
@@ -110,8 +110,8 @@ if(not DEBUG):
     out_servo = AngularServo(12, initial_angle=0, min_angle=-90, max_angle=90, max_pulse_width=2.5/1000, min_pulse_width=1/1000)
     out_motor_linear = Motor(9, 16)
 
-    out_valve_cold.on() # on = close 
-    out_valve_normal.on()
+    out_valve_cold.on() # on = open 
+    out_valve_normal.on() # on = open
     out_pump_main.on()
     out_pump_normal.off()
     out_motor_linear.stop()
@@ -277,7 +277,7 @@ class ScreenSplash(MDBoxLayout):
                 print(e)
         
         # Tank mechanism
-        if (not MAINTENANCE):
+        if (not flag_maintenance):
             if (not in_machine_ready.value):
                 try :
                     r = requests.patch(SERVER + 'machines/' + MACHINE_CODE, data={
@@ -295,6 +295,7 @@ class ScreenSplash(MDBoxLayout):
                         })
                     except Exception as e:
                         print(e)
+
                     print('sending request to server')
                     if (levelMainTank <=5):
                         self.screen_manager.current = 'screen_standby'
@@ -312,23 +313,23 @@ class ScreenSplash(MDBoxLayout):
                     
             if (levelColdTank <=55):
                 if (not DEBUG) : 
-                    out_valve_cold.off()
-                    out_pump_main.off()
+                    out_valve_cold.on() # open cold water valve
+                    out_pump_main.on() # turn on main pump
             
             if (levelNormalTank <=40):
                 if (not DEBUG) : 
-                    out_valve_normal.off()
-                    out_pump_main.off()
+                    out_valve_normal.on() # open normal water valve
+                    out_pump_main.on() # turn on main pump
 
             if (levelColdTank >= 65):
                 if (not DEBUG) : 
-                    out_valve_cold.on()
-                    out_pump_main.on()
+                    out_valve_cold.off() # close cold water valve
+                    out_pump_main.off() # turn off main pump
 
             if (levelNormalTank >= 70):
                 if (not DEBUG) : 
-                    out_valve_normal.on()
-                    out_pump_main.on()
+                    out_valve_normal.off() # close normal water valve
+                    out_pump_main.off() # turn off main pump
 
 class ScreenStandby(MDBoxLayout):
     screen_manager = ObjectProperty(None)
@@ -430,13 +431,13 @@ class ScreenScanQr(MDBoxLayout):
         Clock.schedule_interval(self.regular_check, 3)
 
     def coupon_validate(self):
-        global COUPON, cold, product
+        global text_coupon, cold, product
         # scan kupon QR CODE
         # if (True):
-        COUPON = self.ids.coupon.text
-        if (COUPON):
+        text_coupon = self.ids.text_coupon.text
+        if (text_coupon):
             try :
-                r = requests.post(SERVER + 'transactions/' + COUPON + '/used_machine', data={
+                r = requests.post(SERVER + 'transactions/' + text_coupon + '/used_machine', data={
                     'machine_code' : MACHINE_CODE
                 })
 
@@ -449,7 +450,7 @@ class ScreenScanQr(MDBoxLayout):
                 # speak(message, "coupon_failed")
 
                 if (status == "success"):
-                    endpoint = f'{SERVER}transaction_by_code/{COUPON}'
+                    endpoint = f'{SERVER}transaction_by_code/{text_coupon}'
                     print(endpoint)
 
                     r = requests.get(endpoint.strip())
@@ -473,7 +474,7 @@ class ScreenScanQr(MDBoxLayout):
           #      speak("Mohon maaf, kupon yang Anda masukkan tidak kami kenali", "coupon_failed")
             #    print(e)
                     
-            COUPON = False
+            text_coupon = False
             self.ids.coupon.text = ""
     
     def delayed_init(self, *args):
@@ -769,29 +770,29 @@ class ScreenMaintenance(MDBoxLayout):
         Clock.schedule_interval(self.regular_check, .1)
     
     def act_maintenance(self):
-        global MAINTENANCE
-        if (MAINTENANCE):
-            MAINTENANCE = False            
+        global flag_maintenance
+        if (flag_maintenance):
+            flag_maintenance = False            
         else:
-            MAINTENANCE = True
+            flag_maintenance = True
 
     def act_valve_cold(self):
         global valve_cold, out_valve_cold
         if (valve_cold):
             valve_cold = False 
-            if (not DEBUG) : out_valve_cold.on()
+            if (not DEBUG) : out_valve_cold.off()
         else:
             valve_cold = True 
-            if (not DEBUG) : out_valve_cold.off()
+            if (not DEBUG) : out_valve_cold.on()
 
     def act_valve_normal(self):
         global valve_normal, out_valve_normal
         if (valve_normal):
             valve_normal = False 
-            if (not DEBUG) : out_valve_normal.on()
+            if (not DEBUG) : out_valve_normal.off()
         else:
             valve_normal = True 
-            if (not DEBUG) : out_valve_normal.off()
+            if (not DEBUG) : out_valve_normal.on()
 
     def act_pump_main(self):
         global pump_main, out_pump_main
@@ -857,14 +858,14 @@ class ScreenMaintenance(MDBoxLayout):
         self.screen_manager.current = 'screen_choose_product'
 
     def regular_check(self, *args):
-        global levelColdTank, levelMainTank, levelNormalTank, MAINTENANCE
+        global levelColdTank, levelMainTank, levelNormalTank, flag_maintenance
 
         self.ids.lb_level_main.text = f"{levelMainTank} %"
         self.ids.lb_level_cold.text = f"{levelColdTank} %"
         self.ids.lb_level_normal.text = f"{levelNormalTank} %"
 
         # program for displaying IO condition        
-        if (MAINTENANCE): self.ids.bt_maintenance.md_bg_color = "#3C9999"
+        if (flag_maintenance): self.ids.bt_maintenance.md_bg_color = "#3C9999"
         else: self.ids.bt_maintenance.md_bg_color = "#09343C"
 
         if (valve_cold): self.ids.bt_valve_cold.md_bg_color = "#3C9999"
