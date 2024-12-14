@@ -120,6 +120,15 @@
 			on_press: root.act_pump_main()
 
 		MDFillRoundFlatIconButton:
+			id: bt_maintenance
+			icon: "cog"
+			text: "MAINTENANCE STATE"
+			font_size: 14
+			size_hint: 0.25, 0.08
+			pos_hint: {"center_x": -0.8, "center_y": .05}
+			on_press: root.act_maintenance()
+
+		MDFillRoundFlatIconButton:
 			id: bt_pump_cold
 			icon: "pump"
 			text: "PUMP COLD"

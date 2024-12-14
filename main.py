@@ -21,6 +21,7 @@ import time
 import qrcode
 import requests
 import logging
+import logging
 
 from gpiozero import DigitalInputDevice
 from gpiozero import Motor
@@ -43,7 +44,7 @@ colors = {
 }
 
 MAINTENANCE= True
-DEBUG = True
+DEBUG = False
 COUPON = False
 PASSWORD = "KYP001"
 SERVER = 'https://app.kickyourplast.com/api/'
@@ -77,6 +78,7 @@ productPrice = 0
 pulse = 0
 levelMainTank = 0.0
 levelMainTankArray = []
+windowSize = 200
 windowSize = 200
 levelNormalTank = 0.0
 levelColdTank = 0.0
@@ -687,9 +689,10 @@ class ScreenOperate(MDBoxLayout):
                     out_pump_cold.on() if (cold) else out_pump_normal.on()
                 else :
                     out_servo.angle = 0
-                    servo_open = False
                     out_pump_cold.off()
                     out_pump_normal.off()
+                    time.sleep(.5)
+                    servo_open = False
                     toast("please put your tumbler")
                     speak("mohon letakkan tumbler Anda", "put_tumbler")
 
@@ -764,6 +767,13 @@ class ScreenMaintenance(MDBoxLayout):
     def __init__(self, **kwargs):
         super(ScreenMaintenance, self).__init__(**kwargs)
         Clock.schedule_interval(self.regular_check, .1)
+    
+    def act_maintenance(self):
+        global MAINTENANCE
+        if (MAINTENANCE):
+            MAINTENANCE = False            
+        else:
+            MAINTENANCE = True
 
     def act_valve_cold(self):
         global valve_cold, out_valve_cold
@@ -847,13 +857,16 @@ class ScreenMaintenance(MDBoxLayout):
         self.screen_manager.current = 'screen_choose_product'
 
     def regular_check(self, *args):
-        global levelColdTank, levelMainTank, levelNormalTank
+        global levelColdTank, levelMainTank, levelNormalTank, MAINTENANCE
 
         self.ids.lb_level_main.text = f"{levelMainTank} %"
         self.ids.lb_level_cold.text = f"{levelColdTank} %"
         self.ids.lb_level_normal.text = f"{levelNormalTank} %"
 
         # program for displaying IO condition        
+        if (MAINTENANCE): self.ids.bt_maintenance.md_bg_color = "#3C9999"
+        else: self.ids.bt_maintenance.md_bg_color = "#09343C"
+
         if (valve_cold): self.ids.bt_valve_cold.md_bg_color = "#3C9999"
         else: self.ids.bt_valve_cold.md_bg_color = "#09343C"
 
