@@ -13,7 +13,7 @@
 
 			MDLabel:
 				id: subtitle            
-				text: "WATER DISPENSER MACHINE"
+				text: "WATER REFILL STATION"
 				halign: 'center'
 				valign: 'middle'
 				bold: True
@@ -56,28 +56,10 @@
 			spacing:20
 
 			MDCard:
-				id: payment_gopay
-				ripple_behavior: True
-				on_press: root.pay("GOPAY")
-
-				MDRelativeLayout:
-					Image:
-						source:'asset/Logo_Gopay.png'
-						pos_hint: {"center_x": .5, "center_y": .5}
-						size_hint_y: 0.75
-						allow_stretch: True 
-
-					MDLabel:
-						text: "GOPAY"
-						adaptive_size: True
-						pos: "12dp", "12dp"
-						bold: True
-
-
-			MDCard:
 				id: payment_direct
 				ripple_behavior: True
-				on_press: root.pay("QRIS")
+				# on_press: root.pay("QRIS")
+				on_press: root.pay("GOPAY")
 
 				MDRelativeLayout:
 					Image:

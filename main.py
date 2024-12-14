@@ -1,7 +1,4 @@
 import numpy as np
-import kivy
-import sys
-import os
 from kivymd.app import MDApp
 from kivymd.toast import toast
 from kivy.lang import Builder
@@ -23,12 +20,11 @@ import minimalmodbus
 import time
 import qrcode
 import requests
+import logging
 
-from gpiozero import Button
 from gpiozero import DigitalInputDevice
 from gpiozero import Motor
 from gpiozero import DigitalOutputDevice
-from gpiozero import AngularServo
 from gpiozero import AngularServo
 
 qr = qrcode.QRCode(
@@ -39,39 +35,11 @@ qr = qrcode.QRCode(
 )
 
 colors = {
-    "Blue": {
-        "200": "#A3D8DD",
-        "500": "#A3D8DD",
-        "700": "#A3D8DD",
-    },
-
-    "BlueGray": {
-        "200": "#09343C",
-        "500": "#09343C",
-        "700": "#09343C",
-    },
-
-    "Red": {
-        "A200": "#DDD8DD",
-        "A500": "#DDD8DD",
-        "A700": "#DDD8DD",
-    },
-
-    "Light": {
-        "StatusBar": "#E0E0E0",
-        "AppBar": "#202020",
-        "Background": "#EEEEEE",
-        "CardsDialogs": "#FFFFFF",
-        "FlatButtonDown": "#CCCCCC",
-    },
-
-    "Dark": {
-        "StatusBar": "#101010",
-        "AppBar": "#E0E0E0",
-        "Background": "#111111",
-        "CardsDialogs": "#000000",
-        "FlatButtonDown": "#333333",
-    },
+    "Blue": {"200": "#A3D8DD","500": "#A3D8DD","700": "#A3D8DD",},
+    "BlueGray": {"200": "#09343C","500": "#09343C","700": "#09343C",},
+    "Red": {"A200": "#DDD8DD","A500": "#DDD8DD","A700": "#DDD8DD",},
+    "Light": {"StatusBar": "#E0E0E0","AppBar": "#202020","Background": "#EEEEEE","CardsDialogs": "#FFFFFF","FlatButtonDown": "#CCCCCC",},
+    "Dark": {"StatusBar": "#101010","AppBar": "#E0E0E0","Background": "#111111","CardsDialogs": "#000000","FlatButtonDown": "#333333",},
 }
 
 MAINTENANCE= True
@@ -99,7 +67,7 @@ servo_open = False
 main_switch = True
 
 #spec -> 450 pulse per liter
-pulsePerLiter = 402
+pulsePerLiter =155
 pulsePerMiliLiter = pulsePerLiter/1000
 
 cold = False
@@ -109,14 +77,13 @@ productPrice = 0
 pulse = 0
 levelMainTank = 0.0
 levelMainTankArray = []
-windowSize = 4
+windowSize = 200
 levelNormalTank = 0.0
 levelColdTank = 0.0
-maxMainTank = 13000.0
+maxMainTank = 8000.0
 maxNormalTank = 300.0
 maxColdTank = 200.0
 qrSource = 'asset/qr_payment.png'
-payment_check = None
 payment_check = None
 
 fill_state = False
@@ -127,14 +94,30 @@ count_time_initiate = 0
 
 if(not DEBUG):
     # input declaration 
-    in_sensor_proximity_bawah = DigitalInputDevice(25, pull_up=False) #pull_up=false mean pull_down
-    in_sensor_proximity_atas = DigitalInputDevice(22, pull_up=False)
-    in_sensor_flow = DigitalInputDevice(19, pull_up=False)
-    in_machine_ready = DigitalInputDevice(27, pull_up=False)
-    in_sensor_proximity_bawah = DigitalInputDevice(25, pull_up=False) #pull_up=false mean pull_down
-    in_sensor_proximity_atas = DigitalInputDevice(22, pull_up=False)
-    in_sensor_flow = DigitalInputDevice(19, pull_up=False)
-    in_machine_ready = DigitalInputDevice(27, pull_up=False)
+    in_sensor_proximity_bawah = DigitalInputDevice(23, pull_up=None, active_state=False, bounce_time=.01) #pull_up=false mean pull_down
+    in_sensor_proximity_atas = DigitalInputDevice(22, pull_up=None, active_state=False, bounce_time=.01)
+    in_sensor_flow = DigitalInputDevice(27, pull_up=None, active_state=False)
+    in_machine_ready = DigitalInputDevice(17, pull_up=False, bounce_time=.01)
+
+    # output declaration 
+    out_valve_cold = DigitalOutputDevice(26)
+    out_valve_normal = DigitalOutputDevice(20)
+    out_pump_main = DigitalOutputDevice(21)
+    out_pump_cold = DigitalOutputDevice(5)
+    out_pump_normal = DigitalOutputDevice(6)
+    out_servo = AngularServo(12, initial_angle=0, min_angle=-90, max_angle=90, max_pulse_width=2.5/1000, min_pulse_width=1/1000)
+    out_motor_linear = Motor(9, 16)
+
+    out_valve_cold.on() # on = close 
+    out_valve_normal.on()
+    out_pump_main.on()
+    out_pump_normal.off()
+    out_motor_linear.stop()
+    
+    if (not in_machine_ready.value):
+        logging.critical("PLEASE PRESS THE START BUTTON TO CONTINUE")
+        while not in_machine_ready.value:
+            pass
 
     # modbus communication of sensor declaration 
     mainTank = minimalmodbus.Instrument('/dev/ttyUSB0', 1)
@@ -163,47 +146,23 @@ if(not DEBUG):
     normalTank.serial.timeout = 0.5
     normalTank.mode = MODE
     normalTank.clear_buffers_before_each_transaction = True
-
-    read = mainTank.read_register(5,0,3,False)
-    # filter read value at 65535
-    while read >= 65500:
-        time.sleep(.1)
-        read = mainTank.read_register(5,0,3,False)
-
-    levelMainTankArray = [round(100 - (read * 100 / maxMainTank),2)]*windowSize
+    
+    time.sleep(5)
 
     try:
-        read = mainTank.read_register(5,0,3,False)
-    # filter read value at 65535
-        while read >= 65500:
+        for i in range(windowSize):
             time.sleep(.1)
             read = mainTank.read_register(5,0,3,False)
+    # filter read value at 65535
+            while read >= 65500:
+                time.sleep(.1)
+                read = mainTank.read_register(5,0,3,False)
 
-        levelMainTankArray = [round(100 - (read * 100 / maxMainTank),2)] * windowSize
+            levelMainTankArray.append(round(100 - (read * 100 / maxMainTank),2))
     except Exception as e:
         print(e)
-
-    # output declaration 
-    out_valve_cold = DigitalOutputDevice(26)
-    out_valve_normal = DigitalOutputDevice(20)
-    out_valve_cold = DigitalOutputDevice(26)
-    out_valve_normal = DigitalOutputDevice(20)
-    out_pump_main = DigitalOutputDevice(21)
-    out_pump_cold = DigitalOutputDevice(5)
-    out_pump_normal = DigitalOutputDevice(6)
-    out_servo = AngularServo(12, initial_angle=0, min_angle=-90, max_angle=90, max_pulse_width=2.5/1000, min_pulse_width=1/1000)
-    out_servo = AngularServo(12, initial_angle=0, min_angle=-90, max_angle=90, max_pulse_width=2.5/1000, min_pulse_width=1/1000)
-    out_motor_linear = Motor(9, 16)
-
-    out_valve_cold.on() # on = close 
-    out_valve_normal.on()
-    out_pump_main.on()
-    out_pump_normal.off()
-    out_pump_normal.off()
-    out_motor_linear.stop()
-
-if (not DEBUG):
-    if (not in_machine_ready):
+        
+    if (not in_machine_ready.value):
         main_switch = False
         try :
             r = requests.patch(SERVER + 'machines/' + MACHINE_CODE, data={
@@ -217,7 +176,7 @@ def speak(text, name):
         # tts = gTTS(text=text, lang='id', slow=False)
         filename = "asset/sound/"+ name + '.mp3'
         # tts.save(filename)
-        playsound.playsound(filename, False)
+        # playsound.playsound(filename, False)
     except Exception as e:
         print("error play sound file", e)
 
@@ -237,6 +196,7 @@ def machine_ready():
 def count_pulse():
     global pulse
     pulse +=1
+    print(pulse)
 
 if (not DEBUG) : in_machine_ready.when_activated = machine_ready
 if (not DEBUG) : in_sensor_flow.when_activated = count_pulse 
@@ -249,6 +209,7 @@ class ScreenSplash(MDBoxLayout):
         super(ScreenSplash, self).__init__(**kwargs)
         Clock.schedule_interval(self.update_progress_bar, .01)
         Clock.schedule_interval(self.regular_check, 5)
+        Clock.schedule_interval(self.main_tank_read, .5)
 
     def update_progress_bar(self, *args):
         if (self.ids.progress_bar.value + 1) < 100:
@@ -265,40 +226,11 @@ class ScreenSplash(MDBoxLayout):
             self.screen_manager.current = 'screen_standby'
             return False
 
-    def regular_check(self, *args):
-        global levelColdTank, levelMainTank, levelMainTankArray, levelNormalTank, maxColdTank, maxMainTank, maxNormalTank, out_pump_main, out_valve_cold, out_valve_normal, in_machine_ready
+    def main_tank_read(self, *args):
+        global levelMainTank, levelMainTankArray, maxMainTank
 
         # program for reading sensor end control system algorithm        
-        if(not DEBUG):
-            
-            # modbus communication of sensor declaration 
-            mainTank = minimalmodbus.Instrument('/dev/ttyUSB0', 1)
-            mainTank.serial.baudrate = BAUDRATE
-            mainTank.serial.bytesize = BYTESIZES
-            mainTank.serial.parity = PARITY
-            mainTank.serial.stopbits = STOPBITS
-            mainTank.serial.timeout = 0.5
-            mainTank.mode = MODE
-            mainTank.clear_buffers_before_each_transaction = True
-
-            coldTank = minimalmodbus.Instrument('/dev/ttyUSB0', 2)
-            coldTank.serial.baudrate = BAUDRATE
-            coldTank.serial.bytesize = BYTESIZES
-            coldTank.serial.parity = PARITY
-            coldTank.serial.stopbits = STOPBITS
-            coldTank.serial.timeout = 0.5
-            coldTank.mode = MODE
-            coldTank.clear_buffers_before_each_transaction = True
-
-            normalTank = minimalmodbus.Instrument('/dev/ttyUSB0', 3)
-            normalTank.serial.baudrate = BAUDRATE
-            normalTank.serial.bytesize = BYTESIZES
-            normalTank.serial.parity = PARITY
-            normalTank.serial.stopbits = STOPBITS
-            normalTank.serial.timeout = 0.5
-            normalTank.mode = MODE
-            normalTank.clear_buffers_before_each_transaction = True
-            
+        if(not DEBUG):           
             try:
                 read = mainTank.read_register(5,0,3,False)
                 # filter read value at 65535
@@ -307,8 +239,29 @@ class ScreenSplash(MDBoxLayout):
                     read = mainTank.read_register(5,0,3,False)
 
                 # create moving average of levelMainTank
+                # print(read)
                 levelMainTankArray.pop(0)
                 levelMainTankArray.append(round(100 - (read * 100 / maxMainTank),2))
+                #levelMainTank = round(np.array(levelMainTankArray).mean(),2)
+                
+            except Exception as e:
+                print(e)
+
+    def regular_check(self, *args):
+        global levelColdTank, levelMainTank, levelMainTankArray, levelNormalTank, maxColdTank, maxMainTank, maxNormalTank, out_pump_main, out_valve_cold, out_valve_normal, in_machine_ready
+
+        # program for reading sensor end control system algorithm        
+        if(not DEBUG):           
+            try:
+                # read = mainTank.read_register(5,0,3,False)
+                # # filter read value at 65535
+                # while read >= 65500:
+                #     time.sleep(.1)
+                #     read = mainTank.read_register(5,0,3,False)
+
+                # # create moving average of levelMainTank
+                # levelMainTankArray.pop(0)
+                # levelMainTankArray.append(round(100 - (read * 100 / maxMainTank),2))
                 levelMainTank = round(np.array(levelMainTankArray).mean(),2)
 
                 time.sleep(.1)
@@ -323,7 +276,7 @@ class ScreenSplash(MDBoxLayout):
         
         # Tank mechanism
         if (not MAINTENANCE):
-            if (not in_machine_ready):
+            if (not in_machine_ready.value):
                 try :
                     r = requests.patch(SERVER + 'machines/' + MACHINE_CODE, data={
                         'status' : 'not_ready'
@@ -402,7 +355,7 @@ class ScreenChooseProduct(MDBoxLayout):
 
     def delayed_init(self, *args):
         try :
-            r = requests.get(SERVER + 'products', {all : True})
+            r = requests.get(SERVER + 'products', {"is_featured" : "1"})
             self.products = r.json()['data']
         except Exception as e:
             print(e)
@@ -412,16 +365,22 @@ class ScreenChooseProduct(MDBoxLayout):
                 MDCard(
                     MDRelativeLayout(
                         Image(
-                            source = 'asset/' + str(p['size_in_ml'])+'ml.png',
-                            # source = 'asset/330ml.png',
+                            # source = 'asset/' + str(p['size_in_ml'])+'ml.png',
+                            source = 'asset/350ml.png',
                             pos_hint = {"center_x": .5, "center_y": .5},
                             allow_stretch = True
                         ),
                         MDLabel(
                             text = str(p['size_in_ml'])+'ml',
                             adaptive_size= True,
-						    pos= ["12dp", "12dp"],
+						    pos= ["12dp", "28dp"],
 						    bold= True
+                        ),
+                        MDLabel(
+                            text = 'Rp. '+str(p['price']),
+                            adaptive_size= True,
+						    pos= ["12dp", "12dp"],
+						    # bold= True
                         )
                     ),
                     id = str(p['id']),
@@ -443,9 +402,10 @@ class ScreenChooseProduct(MDBoxLayout):
         product = size
         idProduct = id
         productPrice = price
-        print(idProduct,type(idProduct))
-        print(product,type(product))
-        print(productPrice,type(productPrice))
+        toast("Choose your payment method")
+        # print(idProduct,type(idProduct))
+        # print(product,type(product))
+        # print(productPrice,type(productPrice))
 
     def screen_info(self):
         self.screen_manager.current = 'screen_info'
@@ -465,6 +425,7 @@ class ScreenScanQr(MDBoxLayout):
     def __init__(self, **kwargs):
         super(ScreenScanQr, self).__init__(**kwargs)
         Clock.schedule_once(self.delayed_init)
+        Clock.schedule_interval(self.regular_check, 3)
 
     def coupon_validate(self):
         global COUPON, cold, product
@@ -472,29 +433,54 @@ class ScreenScanQr(MDBoxLayout):
         # if (True):
         COUPON = self.ids.coupon.text
         if (COUPON):
-            endpoint = f'{SERVER}transaction_by_code/{COUPON}'
-            print(endpoint)
             try :
-                r = requests.get(endpoint.strip())
+                r = requests.post(SERVER + 'transactions/' + COUPON + '/used_machine', data={
+                    'machine_code' : MACHINE_CODE
+                })
 
-                # toast(r.json().message)
-                # print(r.json())
-                cold = False if (r.json()['transaction_details'][0]['drink_type']=='regular') else True
-                product = r.json()['transaction_details'][0]['size']
-                print(cold, product)
-                speak("Kupon diterima, silahkan operasikan mesin", "coupon_success")
-                self.screen_manager.current = 'screen_operate'
+                status = r.json()['status']
+                message = r.json()['message']
+
+                # print(status, message)
+                # toast("Pembayaran berhasil! Silahkan atur ketinggian tumbler lau tekan tombol Start")
+                # toast(message)
+                # speak(message, "coupon_failed")
+
+                if (status == "success"):
+                    endpoint = f'{SERVER}transaction_by_code/{COUPON}'
+                    print(endpoint)
+
+                    r = requests.get(endpoint.strip())
+
+                    cold = False if (r.json()['transaction_details'][0]['drink_type']=='regular') else True
+                    product = r.json()['transaction_details'][0]['size']
+                    # print(cold, product)
+                    # toast(r.json()['message'])
+                    toast("Success! Fit your tumbler then press Start")
+                    # speak("Kupon diterima, silahkan operasikan mesin", "coupon_success")
+                    self.screen_manager.current = 'screen_operate'
+
+                else:
+                    toast(message)
+    #                toast("Mohon maaf, kupon yang Anda masukkan tidak kami kenali")
+         #           speak("Mohon maaf, kupon yang Anda masukkan tidak kami kenali", "coupon_failed")
+           #         print(e)
 
             except Exception as e:
-                toast("Mohon maaf, kupon yang Anda masukkan tidak kami kenali")
-                speak("Mohon maaf, kupon yang Anda masukkan tidak kami kenali", "coupon_failed")
-                print(e)
+                toast(message)
+          #      speak("Mohon maaf, kupon yang Anda masukkan tidak kami kenali", "coupon_failed")
+            #    print(e)
                     
             COUPON = False
             self.ids.coupon.text = ""
     
     def delayed_init(self, *args):
         self.ids.coupon.focus = True
+
+    def regular_check(self, *args):
+        if(self.screen_manager.current == 'screen_scan_qr'):
+            self.ids.coupon.focus = True
+
 
     def screen_choose_product(self):
         self.screen_manager.current = 'screen_choose_product'
@@ -531,7 +517,7 @@ class ScreenChoosePayment(MDBoxLayout):
 
             # .... scheduling payment check
             self.n_payment_check = 0
-            toast("Silahkan lakukan pembayaran, tunggu sesaat kami melakukan verifikasi")
+            toast("Please pay, and wait for us to verify")
             payment_check = Clock.schedule_interval(self.payment_check, 1)
             speak("pembayaran melalui gopay dipilih, silahkan scan kode QR yang tampil dilayar pada aplikasi gojek Anda", "pay_gopay")
 
@@ -548,19 +534,16 @@ class ScreenChoosePayment(MDBoxLayout):
                 # phone=self.phone
             )
                 
-            time.sleep(0.1)
-            qr.add_data(qrSource)
-            qr.make(fit=True)
-
-            img = qr.make_image(back_color=(255, 255, 255), fill_color=(55, 95, 100))
-            img.save("asset/qr_payment.png")
+            f = open('asset/qr_payment.png', 'wb')
+            f.write(requests.get(qrSource).content)
+            f.close
 
             self.screen_manager.current = 'screen_qr_payment'
             
             self.n_payment_check = 0
-            toast("Silahkan lakukan pembayaran, tunggu sesaat kami melakukan verifikasi")
+            toast("Please pay, and wait for us to verify")
             payment_check = Clock.schedule_interval(self.payment_check, 1)
-            speak("pembayaran melalui Qris dipilih, silahkan lakukan pembayaran dengan menggunakan kode QR yang ada pada layar", "pay_qris")
+            speak("Silahkan lakukan pembayaran dengan menggunakan kode QR yang ada pada layar", "pay_qris")
 
     def create_transaction(self, method, machine_code, product_id, product_size, qty, price, product_type, phone='-'):
         try :
@@ -597,9 +580,9 @@ class ScreenChoosePayment(MDBoxLayout):
                 
                 if (r.json()['payment_status'] == 'settlement'):
                     Clock.unschedule(self.payment_check)
-                    toast('payment success')
+                    # toast('payment success')
                     self.screen_manager.current = 'screen_operate'
-                    toast("Pembayaran berhasil!")
+                    toast("Success! Fit your tumbler then press Start")
                     speak("Terima kasih, pembayaran berhasil diterima", "pay_succes")
                     time.sleep(0.1)
                     speak("silahkan atur ketinggian tumbler Anda dengan menekan tombol up dan down pada layar", "command_tumbler")
@@ -622,7 +605,7 @@ class ScreenChoosePayment(MDBoxLayout):
             
         else:
             Clock.unschedule(self.payment_check)
-            toast("Pembayaran gagal, silahkan coba lagi")
+            toast("Payment failed, please try again")
             speak("Maaf, pembayaran gagal, silahkan coba kembali", "pay_failed")
             self.transaction_id = ''
             self.screen_manager.current = 'screen_choose_product'
@@ -644,14 +627,14 @@ class ScreenOperate(MDBoxLayout):
 
         self.ids.bt_up.md_bg_color = "#3C9999"
         if (not DEBUG) : out_motor_linear.forward()
-        toast("tumbler base is going up")
+        # toast("tumbler base is going up")
 
     def act_down(self):
         global linear_motor, out_motor_linear
 
         self.ids.bt_down.md_bg_color = "#3C9999"
         if (not DEBUG) : out_motor_linear.backward()
-        toast("tumbler base is going down")
+        # toast("tumbler base is going down")
 
     def act_stop(self):
         global linear_motor, out_motor_linear
@@ -680,6 +663,7 @@ class ScreenOperate(MDBoxLayout):
         if (not DEBUG) :
             out_pump_cold.off()
             out_pump_normal.off()
+            time.sleep(.5)
             out_servo.angle = 0
 
         print("fill stop")
@@ -696,12 +680,10 @@ class ScreenOperate(MDBoxLayout):
             fill_previous = True
 
             if (pulse <= pulsePerMiliLiter * product):
-#                 if (in_sensor_proximity_atas or in_sensor_proximity_bawah):
-
-                # if (True) :
-                if (in_sensor_proximity_atas):
+                if (in_sensor_proximity_atas.value or in_sensor_proximity_bawah.value):
                     out_servo.angle = 90
                     servo_open = True
+                    time.sleep(.5)
                     out_pump_cold.on() if (cold) else out_pump_normal.on()
                 else :
                     out_servo.angle = 0
@@ -715,7 +697,7 @@ class ScreenOperate(MDBoxLayout):
                 self.fill_stop()
         
         elif(not fill_state and fill_previous):
-            print(count_time_initiate)
+            #print(count_time_initiate)
             if (count_time_initiate == 0):
                 fill_previous = False
 
@@ -737,11 +719,14 @@ class ScreenQRPayment(MDBoxLayout):
         self.ids.image_qr_payment.reload()
 
     def cancel(self):
+        global payment_check
+        Clock.unschedule(payment_check)
         self.screen_manager.current = 'screen_choose_product'
 
     def dummy_success(self):
         global payment_check
         Clock.unschedule(payment_check)
+        toast("Success! Fit your tumbler then press Start")
         self.screen_manager.current = 'screen_operate' 
 
 class ScreenInfo(MDBoxLayout):
