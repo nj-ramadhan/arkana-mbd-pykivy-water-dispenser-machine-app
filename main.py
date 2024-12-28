@@ -3,7 +3,8 @@ from kivymd.app import MDApp
 from kivymd.toast import toast
 from kivy.lang import Builder
 from kivy.core.window import Window
-from kivymd.uix.boxlayout import MDBoxLayout
+from kivy.uix.screenmanager import ScreenManager
+from kivymd.uix.screen import MDScreen
 from kivymd.uix.card import MDCard
 from kivymd.uix.label import MDLabel
 from kivymd.uix.relativelayout import MDRelativeLayout
@@ -56,8 +57,16 @@ TIMEOUT = 0.5
 PARITY = minimalmodbus.serial.PARITY_NONE
 MODE = minimalmodbus.MODE_RTU
 
-text_coupon = False
-flag_maintenance= False
+LOW_LOW_LEVEL = 25.0
+LOW_LEVEL = 30.0
+HIGH_LEVEL = 60.0
+HIGH_HIGH_LEVEL = 65.0
+
+DELAY_BEFORE_AUTO_DOWN = 50
+DELAY_WHILE_AUTO_DOWN = 50
+
+text_coupon = ""
+flag_maintenance = False
 valve_cold = False
 valve_normal = False
 pump_main = False
@@ -65,10 +74,10 @@ pump_cold = False
 pump_normal = False
 linear_motor = False
 servo_open = False
-main_switch = True
+main_switch = False
 
-#spec -> 450 pulse per liter
-pulsePerLiter =155
+#spec -> 400 pulse per liter
+pulsePerLiter = 155
 pulsePerMiliLiter = pulsePerLiter/1000
 
 cold = False
@@ -76,30 +85,27 @@ product = 0
 idProduct = 0
 productPrice = 0
 pulse = 0
-levelMainTank = 0.0
+levelMainTank = 50.0
 levelMainTankArray = []
-windowSize = 200
 windowSize = 200
 levelNormalTank = 0.0
 levelColdTank = 0.0
 maxMainTank = 8000.0
-maxNormalTank = 300.0
-maxColdTank = 200.0
+maxNormalTank = 350.0
+maxColdTank = 250.0
 qrSource = 'asset/qr_payment.png'
 payment_check = None
 
 fill_state = False
 fill_previous = False
-delay_before_auto_down = 150
-delay_waiting_auto_down = 50
 count_time_initiate = 0
 
 if(not DEBUG):
     # input declaration 
+    in_machine_ready = DigitalInputDevice(24, pull_up=None, active_state=False, bounce_time=4)
     in_sensor_proximity_bawah = DigitalInputDevice(23, pull_up=None, active_state=False, bounce_time=.01) #pull_up=false mean pull_down
     in_sensor_proximity_atas = DigitalInputDevice(22, pull_up=None, active_state=False, bounce_time=.01)
-    in_sensor_flow = DigitalInputDevice(27, pull_up=None, active_state=False)
-    in_machine_ready = DigitalInputDevice(17, pull_up=False, bounce_time=.01)
+    in_sensor_flow = DigitalInputDevice(27, pull_up=None, active_state=False, bounce_time=.0001)
 
     # output declaration 
     out_valve_cold = DigitalOutputDevice(26)
@@ -109,17 +115,19 @@ if(not DEBUG):
     out_pump_normal = DigitalOutputDevice(6)
     out_servo = AngularServo(12, initial_angle=0, min_angle=-90, max_angle=90, max_pulse_width=2.5/1000, min_pulse_width=1/1000)
     out_motor_linear = Motor(9, 16)
-
     out_valve_cold.on() # on = open 
     out_valve_normal.on() # on = open
     out_pump_main.on()
+    out_pump_cold.off()
     out_pump_normal.off()
     out_motor_linear.stop()
     
-    if (not in_machine_ready.value):
-        logging.critical("PLEASE PRESS THE START BUTTON TO CONTINUE")
-        while not in_machine_ready.value:
-            pass
+#     if (not in_machine_ready.value):
+#         logging.critical("PLEASE PRESS THE START BUTTON TO CONTINUE")
+#         while not in_machine_ready.value:
+#             pass
+            
+    time.sleep(5)
 
     # modbus communication of sensor declaration 
     mainTank = minimalmodbus.Instrument('/dev/ttyUSB0', 1)
@@ -148,22 +156,7 @@ if(not DEBUG):
     normalTank.serial.timeout = 0.5
     normalTank.mode = MODE
     normalTank.clear_buffers_before_each_transaction = True
-    
-    time.sleep(5)
-
-    try:
-        for i in range(windowSize):
-            time.sleep(.1)
-            read = mainTank.read_register(5,0,3,False)
-    # filter read value at 65535
-            while read >= 65500:
-                time.sleep(.1)
-                read = mainTank.read_register(5,0,3,False)
-
-            levelMainTankArray.append(round(100 - (read * 100 / maxMainTank),2))
-    except Exception as e:
-        print(e)
-        
+           
     if (not in_machine_ready.value):
         main_switch = False
         try :
@@ -184,6 +177,9 @@ def speak(text, name):
 
 def machine_ready():
     global main_switch
+    main_switch = in_machine_ready.value
+    print(f'main switch condition: {main_switch}')
+
     try :
         r = requests.patch(SERVER + 'machines/' + MACHINE_CODE, data={
         'stock' : str(levelMainTank)+'%',
@@ -193,25 +189,24 @@ def machine_ready():
     except Exception as e:
         print(e)
         
-    main_switch = True
-
 def count_pulse():
     global pulse
     pulse +=1
-    print(pulse)
+    print(f'pulse count: {pulse}')
 
 if (not DEBUG) : in_machine_ready.when_activated = machine_ready
 if (not DEBUG) : in_sensor_flow.when_activated = count_pulse 
 
-class ScreenSplash(MDBoxLayout):
+class ScreenSplash(MDScreen):
     screen_manager = ObjectProperty(None)
     app_window = ObjectProperty(None)
-    
+
     def __init__(self, **kwargs):
         super(ScreenSplash, self).__init__(**kwargs)
         Clock.schedule_interval(self.update_progress_bar, .01)
-        Clock.schedule_interval(self.regular_check, 5)
-        Clock.schedule_interval(self.main_tank_read, .5)
+        Clock.schedule_interval(self.retry_update_status, 60)
+        Clock.schedule_interval(self.regular_check, 1)
+#         Clock.schedule_interval(self.main_tank_read, 1)
 
     def update_progress_bar(self, *args):
         if (self.ids.progress_bar.value + 1) < 100:
@@ -231,54 +226,64 @@ class ScreenSplash(MDBoxLayout):
     def main_tank_read(self, *args):
         global levelMainTank, levelMainTankArray, maxMainTank
 
-        # program for reading sensor end control system algorithm        
-        if(not DEBUG):           
-            try:
-                read = mainTank.read_register(5,0,3,False)
-                # filter read value at 65535
-                while read >= 65500:
-                    time.sleep(.1)
-                    read = mainTank.read_register(5,0,3,False)
-
-                # create moving average of levelMainTank
-                # print(read)
-                levelMainTankArray.pop(0)
-                levelMainTankArray.append(round(100 - (read * 100 / maxMainTank),2))
-                #levelMainTank = round(np.array(levelMainTankArray).mean(),2)
-                
-            except Exception as e:
-                print(e)
-
     def regular_check(self, *args):
         global levelColdTank, levelMainTank, levelMainTankArray, levelNormalTank, maxColdTank, maxMainTank, maxNormalTank, out_pump_main, out_valve_cold, out_valve_normal, in_machine_ready
+        global flag_maintenance
+        global main_switch
 
-        # program for reading sensor end control system algorithm        
-        if(not DEBUG):           
+        if(not DEBUG) :
             try:
-                # read = mainTank.read_register(5,0,3,False)
-                # # filter read value at 65535
-                # while read >= 65500:
-                #     time.sleep(.1)
-                #     read = mainTank.read_register(5,0,3,False)
+                main_switch = in_machine_ready.value
 
-                # # create moving average of levelMainTank
-                # levelMainTankArray.pop(0)
-                # levelMainTankArray.append(round(100 - (read * 100 / maxMainTank),2))
-                levelMainTank = round(np.array(levelMainTankArray).mean(),2)
+                if(not flag_maintenance):
+                    if(levelColdTank <= LOW_LOW_LEVEL):
+                        out_pump_main.off() # turn on main pump
+                        out_valve_cold.on() # open cold water valve
+                        
+                    if(levelNormalTank <= LOW_LOW_LEVEL):
+                        out_pump_main.off() # turn on main pump
+                        out_valve_normal.on() # open normal water valve
 
+                    if(levelColdTank >= HIGH_HIGH_LEVEL):
+                        out_valve_cold.off() # close cold water valve
+
+                    if(levelNormalTank >= HIGH_HIGH_LEVEL):
+                        out_valve_normal.off() # close normal water valve
+
+                    if(levelNormalTank >= HIGH_LEVEL and levelColdTank >= HIGH_LEVEL):
+                        out_pump_main.on() # turn off main pump
+
+            except Exception as e:
+                print(f'Error automate pump: {e}')
+        # program for reading sensor end control system algorithm
+            try:
+                read = mainTank.read_register(0x0101,0,3,False)
+                levelMainTank = round(100 - (read * 100 / maxMainTank),2)
                 time.sleep(.1)
+            except Exception as e:
+                print(f'Error reading level sensor main tank: {e}')
+                
+            try:
                 read = coldTank.read_register(0x0101,0,3,False)
-                levelColdTank = round(100 - (read * 100 / maxColdTank),2)
+                levelColdTank = round(100 - (read * 100 / maxColdTank),2)                
                 time.sleep(.1)
+            except Exception as e:
+                print(f'Error reading level sensor cold tank: {e}')
+
+            try:
                 read = normalTank.read_register(0x0101,0,3,False)
                 levelNormalTank = round(100 - (read * 100 / maxNormalTank),2)    
-                
+                time.sleep(.1)
             except Exception as e:
-                print(e)
-        
-        # Tank mechanism
-        if (not flag_maintenance):
-            if (not in_machine_ready.value):
+                print(f'Error reading level sensor normal tank: {e}')
+        else:
+            main_switch = True
+                
+    def retry_update_status(self, *args):   
+        global main_switch
+
+        if(not flag_maintenance):
+            if(not main_switch):
                 try :
                     r = requests.patch(SERVER + 'machines/' + MACHINE_CODE, data={
                         'status' : 'not_ready'
@@ -286,7 +291,7 @@ class ScreenSplash(MDBoxLayout):
                 except Exception as e:
                     print(e)
 
-            if (levelMainTank <= 35):
+            if(levelMainTank <= 35):
                 if (not DEBUG) :
                     try :
                         r = requests.patch(SERVER + 'machines/' + MACHINE_CODE, data={
@@ -304,34 +309,19 @@ class ScreenSplash(MDBoxLayout):
 
             else:
                 try :
+                    screen_choose_product = self.screen_manager.get_screen('screen_choose_product')
+                    screen_choose_product.reload_products()
+                    print("try reloading products")
+
                     r = requests.patch(SERVER + 'machines/' + MACHINE_CODE, data={
                         'stock' : str(levelMainTank)+'%',
                         'status' : 'ready'
                     })
                 except Exception as e:                    
-                    print(e)
+                    print(f'Error reload products:{e}')
                     
-            if (levelColdTank <=55):
-                if (not DEBUG) : 
-                    out_valve_cold.on() # open cold water valve
-                    out_pump_main.on() # turn on main pump
-            
-            if (levelNormalTank <=40):
-                if (not DEBUG) : 
-                    out_valve_normal.on() # open normal water valve
-                    out_pump_main.on() # turn on main pump
 
-            if (levelColdTank >= 65):
-                if (not DEBUG) : 
-                    out_valve_cold.off() # close cold water valve
-                    out_pump_main.off() # turn off main pump
-
-            if (levelNormalTank >= 70):
-                if (not DEBUG) : 
-                    out_valve_normal.off() # close normal water valve
-                    out_pump_main.off() # turn off main pump
-
-class ScreenStandby(MDBoxLayout):
+class ScreenStandby(MDScreen):
     screen_manager = ObjectProperty(None)
 
     def __init__(self, **kwargs):
@@ -340,58 +330,74 @@ class ScreenStandby(MDBoxLayout):
 
     def regular_check(self, *args):
         global main_switch
+        main_switch = in_machine_ready.value
         # program for displaying IO condition
         if (main_switch):
             if (self.screen_manager.current == 'screen_standby'):
                 self.screen_manager.current = 'screen_choose_product'
+                Clock.unschedule(self.regular_check)
+
         else:
             # print("machine is standby")
             pass 
 
-class ScreenChooseProduct(MDBoxLayout):
+class ScreenChooseProduct(MDScreen):
     screen_manager = ObjectProperty(None)
 
     def __init__(self, **kwargs):
         super(ScreenChooseProduct, self).__init__(**kwargs)
-        Clock.schedule_interval(self.regular_check, .1)
-        Clock.schedule_once(self.delayed_init)
+        Clock.schedule_interval(self.regular_check, 0.5)
+        Clock.schedule_once(self.delayed_init, 5)
 
     def delayed_init(self, *args):
+        self.reload_products()
+
+    def reload_products(self):
         try :
             r = requests.get(SERVER + 'products', {"is_featured" : "1"})
-            self.products = r.json()['data']
+            products = r.json()['data']            
+            
+            layout_products = self.ids.layout_products
+            layout_products.clear_widgets(children=None)
+
         except Exception as e:
+            toast("Error request product data")
             print(e)
 
-        for p in self.products :
-            self.ids.layout_products.add_widget(
-                MDCard(
-                    MDRelativeLayout(
-                        Image(
-                            # source = 'asset/' + str(p['size_in_ml'])+'ml.png',
-                            source = 'asset/350ml.png',
-                            pos_hint = {"center_x": .5, "center_y": .5},
-                            allow_stretch = True
+        try:
+            layout_products = self.ids.layout_products
+            for p in products :
+                layout_products.add_widget(
+                    MDCard(
+                        MDRelativeLayout(
+                            Image(
+                                # source = 'asset/' + str(p['size_in_ml'])+'ml.png',
+                                source = 'asset/350ml.png',
+                                pos_hint = {"center_x": .5, "center_y": .5},
+                                allow_stretch = True
+                            ),
+                            MDLabel(
+                                text = str(p['size_in_ml'])+'ml',
+                                adaptive_size= True,
+                                pos= ["12dp", "28dp"],
+                                bold= True
+                            ),
+                            MDLabel(
+                                text = 'Rp. '+str(p['price']),
+                                adaptive_size= True,
+                                pos= ["12dp", "12dp"],
+                                # bold= True
+                            )
                         ),
-                        MDLabel(
-                            text = str(p['size_in_ml'])+'ml',
-                            adaptive_size= True,
-						    pos= ["12dp", "28dp"],
-						    bold= True
-                        ),
-                        MDLabel(
-                            text = 'Rp. '+str(p['price']),
-                            adaptive_size= True,
-						    pos= ["12dp", "12dp"],
-						    # bold= True
-                        )
-                    ),
-                    id = str(p['id']),
-                    ripple_behavior = True,
-                    on_press = lambda a, x = p['size_in_ml'], y = p['id'], z = p['price'] : self.choose_payment(x,y,z)
+                        id = str(p['id']),
+                        ripple_behavior = True,
+                        on_press = lambda a, x = p['size_in_ml'], y = p['id'], z = p['price'] : self.choose_payment(x,y,z)
+                    )
                 )
-            )
-    
+        except Exception as e:
+            toast_msg = f'Error Reload Products: {e}'
+            print(toast_msg)
+
     def screen_scan_qr(self):
         self.screen_manager.current = 'screen_scan_qr'
             
@@ -422,60 +428,45 @@ class ScreenChooseProduct(MDBoxLayout):
             self.ids.bt_cold.md_bg_color = "#09343C"
             self.ids.bt_normal.md_bg_color = "#3C9999"       
 
-class ScreenScanQr(MDBoxLayout):
+class ScreenScanQr(MDScreen):
     screen_manager = ObjectProperty(None)
 
     def __init__(self, **kwargs):
         super(ScreenScanQr, self).__init__(**kwargs)
         Clock.schedule_once(self.delayed_init)
-        Clock.schedule_interval(self.regular_check, 3)
+        Clock.schedule_interval(self.regular_check, 2)
 
     def coupon_validate(self):
         global text_coupon, cold, product
-        # scan kupon QR CODE
-        # if (True):
-        text_coupon = self.ids.text_coupon.text
-        if (text_coupon):
-            try :
-                r = requests.post(SERVER + 'transactions/' + text_coupon + '/used_machine', data={
-                    'machine_code' : MACHINE_CODE
-                })
+        
+        text_coupon = self.ids.coupon.text
+#         text_coupon = text_coupon.upper()
+        print(text_coupon)
+#         if (text_coupon != ""):
+        try :
+            r = requests.post(SERVER + 'transactions/' + text_coupon + '/used_machine', data={'machine_code' : MACHINE_CODE})
 
-                status = r.json()['status']
-                message = r.json()['message']
+            status = r.json()['status']
+            message = r.json()['message']
 
-                # print(status, message)
-                # toast("Pembayaran berhasil! Silahkan atur ketinggian tumbler lau tekan tombol Start")
-                # toast(message)
-                # speak(message, "coupon_failed")
+            if (status == "success"):
+                endpoint = f'{SERVER}transaction_by_code/{text_coupon}'
+                print(endpoint)
 
-                if (status == "success"):
-                    endpoint = f'{SERVER}transaction_by_code/{text_coupon}'
-                    print(endpoint)
+                r = requests.get(endpoint.strip())
 
-                    r = requests.get(endpoint.strip())
+                cold = False if (r.json()['transaction_details'][0]['drink_type']=='regular') else True
+                product = r.json()['transaction_details'][0]['size']
+                toast("Success! Fit your tumbler then press Start")
+                self.screen_manager.current = 'screen_operate'
 
-                    cold = False if (r.json()['transaction_details'][0]['drink_type']=='regular') else True
-                    product = r.json()['transaction_details'][0]['size']
-                    # print(cold, product)
-                    # toast(r.json()['message'])
-                    toast("Success! Fit your tumbler then press Start")
-                    # speak("Kupon diterima, silahkan operasikan mesin", "coupon_success")
-                    self.screen_manager.current = 'screen_operate'
-
-                else:
-                    toast(message)
-    #                toast("Mohon maaf, kupon yang Anda masukkan tidak kami kenali")
-         #           speak("Mohon maaf, kupon yang Anda masukkan tidak kami kenali", "coupon_failed")
-           #         print(e)
-
-            except Exception as e:
-                toast(message)
-          #      speak("Mohon maaf, kupon yang Anda masukkan tidak kami kenali", "coupon_failed")
-            #    print(e)
-                    
-            text_coupon = False
-            self.ids.coupon.text = ""
+            else:
+                toast(f'Coupon {text_coupon}, {message}')
+        except Exception as e:
+            toast(f'Coupon {text_coupon}, {message}')
+            
+        text_coupon = ""
+        self.ids.coupon.text = ""
     
     def delayed_init(self, *args):
         self.ids.coupon.focus = True
@@ -484,11 +475,10 @@ class ScreenScanQr(MDBoxLayout):
         if(self.screen_manager.current == 'screen_scan_qr'):
             self.ids.coupon.focus = True
 
-
     def screen_choose_product(self):
         self.screen_manager.current = 'screen_choose_product'
 
-class ScreenChoosePayment(MDBoxLayout):
+class ScreenChoosePayment(MDScreen):
     screen_manager = ObjectProperty(None)
 
     def __init__(self, **kwargs):
@@ -618,7 +608,7 @@ class ScreenChoosePayment(MDBoxLayout):
         Clock.unschedule(self.payment_check)
 
 
-class ScreenOperate(MDBoxLayout):
+class ScreenOperate(MDScreen):
     screen_manager = ObjectProperty(None)
 
     def __init__(self, **kwargs):       
@@ -659,6 +649,7 @@ class ScreenOperate(MDBoxLayout):
 
     def fill_stop(self):
         global out_pump_cold, out_pump_normal, servo_open, fill_state
+        global levelMainTank
 
         servo_open = False
         fill_state = False
@@ -668,6 +659,7 @@ class ScreenOperate(MDBoxLayout):
             out_pump_normal.off()
             time.sleep(.5)
             out_servo.angle = 0
+            levelMainTank -= 2
 
         print("fill stop")
         toast("thank you for decreasing plastic bottle trash by buying our product")
@@ -676,14 +668,15 @@ class ScreenOperate(MDBoxLayout):
 
     def regular_check(self, *args):
         global pulse, product, pulsePerMiliLiter, in_sensor_proximity_atas, in_sensor_proximity_bawah, out_pump_cold, out_pump_normal, out_servo, servo_open
-        global fill_state, fill_previous, delay_before_auto_down, delay_waiting_auto_down, count_time_initiate
+        global fill_state, fill_previous, count_time_initiate
 
         if (fill_state):
-            count_time_initiate = delay_before_auto_down
+            count_time_initiate = DELAY_BEFORE_AUTO_DOWN
             fill_previous = True
 
             if (pulse <= pulsePerMiliLiter * product):
-                if (in_sensor_proximity_atas.value or in_sensor_proximity_bawah.value):
+             #   if (in_sensor_proximity_atas.value or in_sensor_proximity_bawah.value):
+                if (True):        
                     out_servo.angle = 90
                     servo_open = True
                     time.sleep(.5)
@@ -708,10 +701,10 @@ class ScreenOperate(MDBoxLayout):
             if (count_time_initiate > 0):
                 count_time_initiate -= 1
 
-            if (count_time_initiate <= delay_waiting_auto_down):
+            if (count_time_initiate <= DELAY_WHILE_AUTO_DOWN):
                 self.act_down()
 
-class ScreenQRPayment(MDBoxLayout):
+class ScreenQRPayment(MDScreen):
     screen_manager = ObjectProperty(None)
 
     def __init__(self, **kwargs):
@@ -733,7 +726,7 @@ class ScreenQRPayment(MDBoxLayout):
         toast("Success! Fit your tumbler then press Start")
         self.screen_manager.current = 'screen_operate' 
 
-class ScreenInfo(MDBoxLayout):
+class ScreenInfo(MDScreen):
     screen_manager = ObjectProperty(None)
     password = ""
 
@@ -762,7 +755,7 @@ class ScreenInfo(MDBoxLayout):
         self.ids.textfield_password.opacity = 1.0
         print("textfield is shown")
 
-class ScreenMaintenance(MDBoxLayout):
+class ScreenMaintenance(MDScreen):
     screen_manager = ObjectProperty(None)
 
     def __init__(self, **kwargs):
@@ -771,10 +764,13 @@ class ScreenMaintenance(MDBoxLayout):
     
     def act_maintenance(self):
         global flag_maintenance
+
         if (flag_maintenance):
-            flag_maintenance = False            
+            flag_maintenance = False
+            toast("Mode running")
         else:
             flag_maintenance = True
+            toast("Mode maintenance")
 
     def act_valve_cold(self):
         global valve_cold, out_valve_cold
@@ -890,6 +886,9 @@ class ScreenMaintenance(MDBoxLayout):
             self.ids.bt_open.md_bg_color = "#09343C"
             self.ids.bt_close.md_bg_color = "#3C9999"
 
+class RootScreen(ScreenManager):
+    pass    
+
 class WaterDispenserMachineApp(MDApp):
     def __init__(self, **kwargs):
         super().__init__(**kwargs)
@@ -904,9 +903,9 @@ class WaterDispenserMachineApp(MDApp):
         # Window.size = 1080, 600
         Window.allow_screensaver = True
 
-        screen = Builder.load_file('main.kv')
+        Builder.load_file('main.kv')
+        return RootScreen()
 
-        return screen
 
 if __name__ == '__main__':
     WaterDispenserMachineApp().run()

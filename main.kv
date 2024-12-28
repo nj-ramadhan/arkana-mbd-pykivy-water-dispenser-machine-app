@@ -11,60 +11,54 @@
 #:include screen_qr_payment.kv
 #:include screen_scan_qr.kv
 
-ScreenManager:
+
+# ScreenManager:
+<RootScreen>:
     id: screen_manager
     transition: NoTransition()
-    Screen:
+
+    ScreenSplash:
+        id: screen_home
         name: 'screen_splash'
-        ScreenSplash:
-            app_window: app
-            screen_manager: screen_manager
+        screen_manager: screen_manager
 
-    Screen:
+    ScreenStandby:
+        id: screen_standby
         name: 'screen_standby'
-        ScreenStandby:
-            id: screen_standby
-            screen_manager: screen_manager
+        screen_manager: screen_manager
 
-    Screen:
+    ScreenChooseProduct:
+        id: screen_choose_product
         name: 'screen_choose_product'
-        ScreenChooseProduct:
-            id: screen_choose_product
-            screen_manager: screen_manager
+        screen_manager: screen_manager
 
-    Screen:
+    ScreenChoosePayment:
+        id: screen_choose_payment
         name: 'screen_choose_payment'
-        ScreenChoosePayment:
-            id: screen_choose_payment
-            screen_manager: screen_manager
+        screen_manager: screen_manager
 
-    Screen:
+    ScreenQRPayment:
+        id: screen_qr_payment
         name: 'screen_qr_payment'
-        ScreenQRPayment:
-            id: screen_qr_payment
-            screen_manager: screen_manager  
+        screen_manager: screen_manager  
             
-    Screen:
+    ScreenOperate:
+        id: screen_operate
         name: 'screen_operate'
-        ScreenOperate:
-            id: screen_operate
-            screen_manager: screen_manager
+        screen_manager: screen_manager
 
-    Screen:
+    ScreenInfo:
+        id: screen_info
         name: 'screen_info'
-        ScreenInfo:
-            id: screen_info
-            screen_manager: screen_manager
+        screen_manager: screen_manager
 
-    Screen:
+    ScreenMaintenance:
+        id: screen_maintenance
         name: 'screen_maintenance'
-        ScreenMaintenance:
-            id: screen_maintenance
-            screen_manager: screen_manager                  
+        screen_manager: screen_manager                  
 
-    Screen:
+    ScreenScanQr:
+        id: screen_scan_qr
         name: 'screen_scan_qr'
-        ScreenScanQr:
-            id: screen_scan_qr
-            screen_manager: screen_manager                  
+        screen_manager: screen_manager                  
 

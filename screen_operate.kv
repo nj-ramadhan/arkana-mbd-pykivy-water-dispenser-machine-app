@@ -9,7 +9,7 @@
             orientation: "horizontal"
             padding: 20
 			spacing: 50
-			size_hint: 2, 0.15
+			size_hint: 1, 0.15
 
 			MDLabel:
 				id: subtitle            
@@ -32,7 +32,7 @@
 			id: layout_title
 			orientation: "vertical"
 			md_bg_color: app.theme_cls.primary_color
-			size_hint: 2, 0.1
+			size_hint: 1, 0.1
 			padding:10
 			spacing:10
 
@@ -49,7 +49,7 @@
 			id: layout_info
 			orientation: "vertical"
 			md_bg_color: app.theme_cls.accent_color
-			size_hint: 2, 0.75
+			size_hint: 1, 0.75
 			padding:10
 			spacing:10
 
@@ -59,8 +59,8 @@
 			icon: "arrow-up"
 			text: "UP"
 			font_size: 28
-			size_hint: 0.4, 0.2
-			pos_hint: {"center_x": -0.5, "center_y": .50}
+			size_hint: 0.2, 0.2
+			pos_hint: {"center_x": .25, "center_y": .50}
 			on_press: root.act_up()
 			on_release: root.act_stop()
 
@@ -69,8 +69,8 @@
 			icon: "arrow-down"
 			text: "DOWN"
 			font_size: 28
-			size_hint: 0.4, 0.2
-			pos_hint: {"center_x": -0.5, "center_y": .20}
+			size_hint: 0.2, 0.2
+			pos_hint: {"center_x": .25, "center_y": .20}
 			on_press: root.act_down()
 			on_release: root.act_stop()
 
@@ -79,8 +79,8 @@
 			icon: "water"
 			text: "START"
 			font_size: 28
-			size_hint: 0.4, 0.2
-			pos_hint: {"center_x": .5, "center_y": .50}
+			size_hint: 0.2, 0.2
+			pos_hint: {"center_x": .75, "center_y": .50}
 			on_press: root.fill_start()
 
 		MDFillRoundFlatIconButton:
@@ -88,14 +88,14 @@
 			icon: "cancel"
 			text: "STOP"
 			font_size: 28
-			size_hint: 0.4, 0.2
-			pos_hint: {"center_x": .5, "center_y": .20}
+			size_hint: 0.2, 0.2
+			pos_hint: {"center_x": .75, "center_y": .20}
 			on_press: root.fill_stop()
 
 		MDFillRoundFlatIconButton:
 			id: bt_fill_stop_hidden
 			text: " "
 			font_size: 21
-			size_hint: 0.18, 0.08
-			pos_hint: {"center_x": .75, "center_y": .80}
+			size_hint: 0.08, 0.08
+			pos_hint: {"center_x": .9, "center_y": .80}
 			on_press: root.fill_stop()

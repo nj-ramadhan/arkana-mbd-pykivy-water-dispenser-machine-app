@@ -8,7 +8,7 @@
             orientation: "horizontal"
             padding: 20
 			spacing: 50
-			size_hint: 2, 0.15
+			size_hint: 1, 0.15
 
 			MDLabel:
 				id: subtitle            
@@ -31,7 +31,7 @@
 			id: layout_title
 			orientation: "vertical"
 			md_bg_color: app.theme_cls.primary_color
-			size_hint: 2, 0.1
+			size_hint: 1, 0.1
 
 			MDLabel:
 				text: "CHOOSE PRODUCT"
@@ -46,7 +46,7 @@
 			id: layout_product_type
 			orientation: "horizontal"
 			md_bg_color: app.theme_cls.accent_color
-			size_hint: 2, 0.1
+			size_hint: 1, 0.1
 			padding:10
 			spacing:10
 
@@ -72,7 +72,7 @@
 			md_bg_color: app.theme_cls.accent_color
 			row_force_default: True
 			row_default_height: 150
-			size_hint: 2, 0.65
+			size_hint: 1, 0.65
 			padding:20
 			spacing:20
 
@@ -83,9 +83,8 @@
 			icon: "information"
 			text: "INFO"
 			font_size: 28
-			size_hint: 0.4, 0.1
-			pos_hint: {"center_x": .78, "center_y": .1}
-			pos_hint: {"center_x": .78, "center_y": .1}
+			size_hint: 0.2, 0.1
+			pos_hint: {"center_x": .9, "center_y": .1}
 			on_press: root.screen_info()
 		
 		MDFillRoundFlatIconButton:
@@ -93,7 +92,7 @@
 			icon: "qrcode-scan"
 			text: "Scan QR Code\n(buy via app)"
 			font_size: 28
-			size_hint: 0.4, 0.1
-			pos_hint: {"center_x": 0.3, "center_y": .1}
+			size_hint: 0.2, 0.1
+			pos_hint: {"center_x": .5, "center_y": .1}
 			on_press: root.screen_scan_qr()
 				
