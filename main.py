@@ -442,7 +442,7 @@ class ScreenScanQr(MDScreen):
 
     def __init__(self, **kwargs):
         super(ScreenScanQr, self).__init__(**kwargs)
-        # Clock.schedule_interval(self.regular_check, 2)
+        Clock.schedule_interval(self.refocusing, 2)
 
     def on_enter(self):
         Clock.schedule_once(self.text_refocus, 0.5)
@@ -482,6 +482,11 @@ class ScreenScanQr(MDScreen):
             
         text_coupon = ""
         self.ids.coupon.text = ""
+
+    def refocusing(self, *args):
+        if(self.screen_manager.current == 'screen_scan_qr'):
+            if (self.ids.coupon.focus == False):
+                self.ids.coupon.focus = True
 
     def screen_choose_product(self):
         self.screen_manager.current = 'screen_choose_product'
