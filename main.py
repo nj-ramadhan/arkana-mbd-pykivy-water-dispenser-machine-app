@@ -157,14 +157,14 @@ if(not DEBUG):
     normalTank.mode = MODE
     normalTank.clear_buffers_before_each_transaction = True
            
-    if (not in_machine_ready.value):
-        main_switch = False
-        try :
-            r = requests.patch(SERVER + 'machines/' + MACHINE_CODE, data={
-            'status' : 'not_ready'
-            })
-        except Exception as e:
-            print(e)
+    # if (not in_machine_ready.value):
+    #     main_switch = False
+    #     try :
+    #         r = requests.patch(SERVER + 'machines/' + MACHINE_CODE, data={
+    #         'status' : 'not_ready'
+    #         })
+    #     except Exception as e:
+    #         print(e)
 
 def speak(text, name):
     try:
@@ -283,13 +283,13 @@ class ScreenSplash(MDScreen):
         global main_switch
 
         if(not flag_maintenance):
-            if(not main_switch):
-                try :
-                    r = requests.patch(SERVER + 'machines/' + MACHINE_CODE, data={
-                        'status' : 'not_ready'
-                    })
-                except Exception as e:
-                    print(e)
+            # if(main_switch):
+            #     try :
+            #         r = requests.patch(SERVER + 'machines/' + MACHINE_CODE, data={
+            #             'status' : 'ready'
+            #         })
+            #     except Exception as e:
+            #         print(e)
 
             if(levelMainTank <= 35):
                 if (not DEBUG) :
@@ -326,12 +326,20 @@ class ScreenStandby(MDScreen):
 
     def __init__(self, **kwargs):
         super(ScreenStandby, self).__init__(**kwargs)
-        Clock.schedule_interval(self.regular_check, 1)
+        Clock.schedule_interval(self.regular_check, 3)
 
     def regular_check(self, *args):
         global main_switch
-        main_switch = in_machine_ready.value
-        # program for displaying IO condition
+
+        if(not DEBUG) :
+            try:
+                main_switch = in_machine_ready.value        
+            except Exception as e:                    
+                print(f'Error standby check:{e}')
+        else:
+            main_switch = True
+
+                # program for displaying IO condition
         if (main_switch):
             if (self.screen_manager.current == 'screen_standby'):
                 self.screen_manager.current = 'screen_choose_product'
@@ -339,7 +347,8 @@ class ScreenStandby(MDScreen):
 
         else:
             # print("machine is standby")
-            pass 
+            if (self.screen_manager.current == 'screen_choose_product'):
+                self.screen_manager.current == 'screen_standby'
 
 class ScreenChooseProduct(MDScreen):
     screen_manager = ObjectProperty(None)
@@ -433,13 +442,13 @@ class ScreenScanQr(MDScreen):
 
     def __init__(self, **kwargs):
         super(ScreenScanQr, self).__init__(**kwargs)
-        Clock.schedule_once(self.delayed_init)
-        Clock.schedule_interval(self.regular_check, 2)
+        Clock.schedule_interval(self.regular_check, 0.2)
 
     def coupon_validate(self):
         global text_coupon, cold, product
         
         text_coupon = self.ids.coupon.text
+        message = "Error connection"
 #         text_coupon = text_coupon.upper()
         print(text_coupon)
 #         if (text_coupon != ""):
@@ -467,13 +476,11 @@ class ScreenScanQr(MDScreen):
             
         text_coupon = ""
         self.ids.coupon.text = ""
-    
-    def delayed_init(self, *args):
-        self.ids.coupon.focus = True
 
     def regular_check(self, *args):
-        if(self.screen_manager.current == 'screen_scan_qr'):
-            self.ids.coupon.focus = True
+        if (self.ids.coupon.focus == False):
+            if(self.screen_manager.current == 'screen_scan_qr'):
+                self.ids.coupon.focus = True
 
     def screen_choose_product(self):
         self.screen_manager.current = 'screen_choose_product'
@@ -511,7 +518,7 @@ class ScreenChoosePayment(MDScreen):
             # .... scheduling payment check
             self.n_payment_check = 0
             toast("Please pay, and wait for us to verify")
-            payment_check = Clock.schedule_interval(self.payment_check, 1)
+            payment_check = Clock.schedule_interval(self.payment_check, 2)
             speak("pembayaran melalui gopay dipilih, silahkan scan kode QR yang tampil dilayar pada aplikasi gojek Anda", "pay_gopay")
 
         elif(method=="QRIS"):
@@ -523,7 +530,7 @@ class ScreenChoosePayment(MDScreen):
                 product_size=product,
                 qty=1,
                 price=productPrice,
-                product_type="cold" if (cold) else "regular",
+                product_type="cold" if (cold) else "normal",
                 # phone=self.phone
             )
                 
@@ -535,7 +542,7 @@ class ScreenChoosePayment(MDScreen):
             
             self.n_payment_check = 0
             toast("Please pay, and wait for us to verify")
-            payment_check = Clock.schedule_interval(self.payment_check, 1)
+            payment_check = Clock.schedule_interval(self.payment_check, 2)
             speak("Silahkan lakukan pembayaran dengan menggunakan kode QR yang ada pada layar", "pay_qris")
 
     def create_transaction(self, method, machine_code, product_id, product_size, qty, price, product_type, phone='-'):
@@ -577,9 +584,9 @@ class ScreenChoosePayment(MDScreen):
                     self.screen_manager.current = 'screen_operate'
                     toast("Success! Fit your tumbler then press Start")
                     speak("Terima kasih, pembayaran berhasil diterima", "pay_succes")
-                    time.sleep(0.1)
+                    time.sleep(0.5)
                     speak("silahkan atur ketinggian tumbler Anda dengan menekan tombol up dan down pada layar", "command_tumbler")
-                    time.sleep(0.1)
+                    time.sleep(0.5)
                     speak("tekan tombol start untuk mulai pengisian air, dan tombol stop untuk berhenti", "command_fill")
                     self.transaction_id = ''
 
@@ -709,7 +716,7 @@ class ScreenQRPayment(MDScreen):
 
     def __init__(self, **kwargs):
         super(ScreenQRPayment, self).__init__(**kwargs)
-        Clock.schedule_interval(self.regular_check, 5)
+        Clock.schedule_interval(self.regular_check, 10)
         
     def regular_check(self, *args):
         self.ids.image_qr_payment.source = 'asset/qr_payment.png'
