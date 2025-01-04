@@ -102,7 +102,7 @@ count_time_initiate = 0
 
 if(not DEBUG):
     # input declaration 
-    in_machine_ready = DigitalInputDevice(24, pull_up=None, active_state=False, bounce_time=4)
+    in_machine_ready = DigitalInputDevice(24, pull_up=None, active_state=True, bounce_time=4)
     in_sensor_proximity_bawah = DigitalInputDevice(23, pull_up=None, active_state=False, bounce_time=.01) #pull_up=false mean pull_down
     in_sensor_proximity_atas = DigitalInputDevice(22, pull_up=None, active_state=False, bounce_time=.01)
     in_sensor_flow = DigitalInputDevice(27, pull_up=None, active_state=False, bounce_time=.0001)
@@ -121,13 +121,8 @@ if(not DEBUG):
     out_pump_cold.off()
     out_pump_normal.off()
     out_motor_linear.stop()
-    
-#     if (not in_machine_ready.value):
-#         logging.critical("PLEASE PRESS THE START BUTTON TO CONTINUE")
-#         while not in_machine_ready.value:
-#             pass
-            
-    time.sleep(5)
+               
+    time.sleep(0.5)
 
     # modbus communication of sensor declaration 
     mainTank = minimalmodbus.Instrument('/dev/ttyUSB0', 1)
@@ -156,15 +151,6 @@ if(not DEBUG):
     normalTank.serial.timeout = 0.5
     normalTank.mode = MODE
     normalTank.clear_buffers_before_each_transaction = True
-           
-    # if (not in_machine_ready.value):
-    #     main_switch = False
-    #     try :
-    #         r = requests.patch(SERVER + 'machines/' + MACHINE_CODE, data={
-    #         'status' : 'not_ready'
-    #         })
-    #     except Exception as e:
-    #         print(e)
 
 def speak(text, name):
     try:
@@ -177,21 +163,29 @@ def speak(text, name):
 
 def machine_ready():
     global main_switch
+
     main_switch = in_machine_ready.value
     print(f'main switch condition: {main_switch}')
 
-    try :
-        r = requests.patch(SERVER + 'machines/' + MACHINE_CODE, data={
-        'stock' : str(levelMainTank)+'%',
-        'status' : 'ready'
-        })
-        
-    except Exception as e:
-        print(e)
+    if(main_switch):
+        try :
+            requests.patch(SERVER + 'machines/' + MACHINE_CODE, data={
+                'status' : 'ready'
+            })
+        except Exception as e:
+            print(e)
+    else:
+        try :
+            requests.patch(SERVER + 'machines/' + MACHINE_CODE, data={
+                'status' : 'not_ready'
+            })
+        except Exception as e:
+            print(e)
         
 def count_pulse():
     global pulse
-    pulse +=1
+
+    pulse += 1
     print(f'pulse count: {pulse}')
 
 if (not DEBUG) : in_machine_ready.when_activated = machine_ready
@@ -204,7 +198,8 @@ class ScreenSplash(MDScreen):
     def __init__(self, **kwargs):
         super(ScreenSplash, self).__init__(**kwargs)
         Clock.schedule_interval(self.update_progress_bar, .01)
-        Clock.schedule_interval(self.retry_update_status, 60)
+        Clock.schedule_interval(self.retry_get_products, 60)
+        Clock.schedule_interval(self.retry_update_status, 3600)
         Clock.schedule_interval(self.regular_check, 1)
 #         Clock.schedule_interval(self.main_tank_read, 1)
 
@@ -278,47 +273,55 @@ class ScreenSplash(MDScreen):
                 print(f'Error reading level sensor normal tank: {e}')
         else:
             main_switch = True
-                
+
+    def retry_get_products(self, *args):   
+        try :
+            screen_choose_product = self.screen_manager.get_screen('screen_choose_product')
+            screen_choose_product.reload_products()
+            print("try reloading products")
+
+        except Exception as e:                    
+            print(f'Error reload products:{e}')
+
     def retry_update_status(self, *args):   
         global main_switch
 
         if(not flag_maintenance):
-            # if(main_switch):
-            #     try :
-            #         r = requests.patch(SERVER + 'machines/' + MACHINE_CODE, data={
-            #             'status' : 'ready'
-            #         })
-            #     except Exception as e:
-            #         print(e)
-
-            if(levelMainTank <= 35):
-                if (not DEBUG) :
+            if(main_switch):
+                if(levelMainTank <= LOW_LEVEL):
                     try :
-                        r = requests.patch(SERVER + 'machines/' + MACHINE_CODE, data={
-                            'stock' : str(levelMainTank)+'%',
+                        requests.patch(SERVER + 'machines/' + MACHINE_CODE, data={
+                            'stock' : str(levelMainTank),
                             'status' : 'low_level'
                         })
                     except Exception as e:
                         print(e)
+                    print('updating status to server')
 
-                    print('sending request to server')
-                    if (levelMainTank <=5):
+                    if (levelMainTank <= LOW_LOW_LEVEL):
+                        try :
+                            requests.patch(SERVER + 'machines/' + MACHINE_CODE, data={
+                                'stock' : str(levelMainTank),
+                                'status' : 'not_ready'
+                            })
+                        except Exception as e:
+                            print(e)
+
                         self.screen_manager.current = 'screen_standby'
                     else:
                         if (self.screen_manager.current == 'screen_standby') : self.screen_manager.current = 'screen_choose_product'
-
-            else:
-                try :
-                    screen_choose_product = self.screen_manager.get_screen('screen_choose_product')
-                    screen_choose_product.reload_products()
-                    print("try reloading products")
-
-                    r = requests.patch(SERVER + 'machines/' + MACHINE_CODE, data={
-                        'stock' : str(levelMainTank)+'%',
+                else:
+                    requests.patch(SERVER + 'machines/' + MACHINE_CODE, data={
+                        'stock' : str(levelMainTank),
                         'status' : 'ready'
                     })
-                except Exception as e:                    
-                    print(f'Error reload products:{e}')
+            else:
+                try :
+                    requests.patch(SERVER + 'machines/' + MACHINE_CODE, data={
+                        'status' : 'not_ready'
+                    })
+                except Exception as e:
+                    print(e)
                     
 
 class ScreenStandby(MDScreen):
