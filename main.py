@@ -1,4 +1,3 @@
-import numpy as np
 from kivymd.app import MDApp
 from kivymd.toast import toast
 from kivy.lang import Builder
@@ -10,31 +9,11 @@ from kivymd.uix.label import MDLabel
 from kivymd.uix.relativelayout import MDRelativeLayout
 from kivy.uix.image import Image
 from kivy.clock import Clock
-from kivy.config import Config
-from kivy.metrics import dp
-from datetime import datetime
-from pathlib import Path
 from kivy.properties import ObjectProperty
-from kivy.properties import StringProperty
-import playsound
-import minimalmodbus
-import time
-import qrcode
-import requests
-import logging
-import logging
+from playsound import playsound
+import minimalmodbus, time, qrcode, requests
 
-from gpiozero import DigitalInputDevice
-from gpiozero import Motor
-from gpiozero import DigitalOutputDevice
-from gpiozero import AngularServo
-
-qr = qrcode.QRCode(
-    version=1,
-    error_correction=qrcode.constants.ERROR_CORRECT_L,
-    box_size=10,
-    border=4,
-)
+qr = qrcode.QRCode(version=1, error_correction=qrcode.constants.ERROR_CORRECT_L, box_size=10, border=4,)
 
 colors = {
     "Blue": {"200": "#A3D8DD","500": "#A3D8DD","700": "#A3D8DD",},
@@ -44,7 +23,7 @@ colors = {
     "Dark": {"StatusBar": "#101010","AppBar": "#E0E0E0","Background": "#111111","CardsDialogs": "#000000","FlatButtonDown": "#333333",},
 }
 
-DEBUG = False
+DEBUG = True
 PASSWORD = "KYP001"
 SERVER = 'https://app.kickyourplast.com/api/'
 MACHINE_CODE = 'KYP001'
@@ -101,70 +80,80 @@ fill_previous = False
 count_time_initiate = 0
 
 if(not DEBUG):
-    # input declaration 
-    in_machine_ready = DigitalInputDevice(24, pull_up=None, active_state=True, bounce_time=4)
-    in_sensor_proximity_bawah = DigitalInputDevice(23, pull_up=None, active_state=False, bounce_time=.01) #pull_up=false mean pull_down
-    in_sensor_proximity_atas = DigitalInputDevice(22, pull_up=None, active_state=False, bounce_time=.01)
-    in_sensor_flow = DigitalInputDevice(27, pull_up=None, active_state=False, bounce_time=.0001)
+    # # input declaration 
+    # in_machine_ready = DigitalInputDevice(24, pull_up=None, active_state=True, bounce_time=4)
+    # in_sensor_proximity_bawah = DigitalInputDevice(23, pull_up=None, active_state=False, bounce_time=.01) #pull_up=false mean pull_down
+    # in_sensor_proximity_atas = DigitalInputDevice(22, pull_up=None, active_state=False, bounce_time=.01)
+    # in_sensor_flow = DigitalInputDevice(27, pull_up=None, active_state=False, bounce_time=.0001)
 
-    # output declaration 
-    out_valve_cold = DigitalOutputDevice(26)
-    out_valve_normal = DigitalOutputDevice(20)
-    out_pump_main = DigitalOutputDevice(21)
-    out_pump_cold = DigitalOutputDevice(5)
-    out_pump_normal = DigitalOutputDevice(6)
-    out_servo = AngularServo(12, initial_angle=0, min_angle=-90, max_angle=90, max_pulse_width=2.5/1000, min_pulse_width=1/1000)
-    out_motor_linear = Motor(9, 16)
-    out_valve_cold.on() # on = open 
-    out_valve_normal.on() # on = open
-    out_pump_main.on()
-    out_pump_cold.off()
-    out_pump_normal.off()
-    out_motor_linear.stop()
+    # # output declaration 
+    # out_valve_cold = DigitalOutputDevice(26)
+    # out_valve_normal = DigitalOutputDevice(20)
+    # out_pump_main = DigitalOutputDevice(21)
+    # out_pump_cold = DigitalOutputDevice(5)
+    # out_pump_normal = DigitalOutputDevice(6)
+    # out_servo = AngularServo(12, initial_angle=0, min_angle=-90, max_angle=90, max_pulse_width=2.5/1000, min_pulse_width=1/1000)
+    # out_motor_linear = Motor(9, 16)
+    # out_valve_cold.on() # on = open 
+    # out_valve_normal.on() # on = open
+    # out_pump_main.on()
+    # out_pump_cold.off()
+    # out_pump_normal.off()
+    # out_motor_linear.stop()
                
-    time.sleep(0.5)
+    # time.sleep(0.5)
 
-    # modbus communication of sensor declaration 
-    mainTank = minimalmodbus.Instrument('/dev/ttyUSB0', 1)
-    mainTank.serial.baudrate = BAUDRATE
-    mainTank.serial.bytesize = BYTESIZES
-    mainTank.serial.parity = PARITY
-    mainTank.serial.stopbits = STOPBITS
-    mainTank.serial.timeout = 0.5
-    mainTank.mode = MODE
-    mainTank.clear_buffers_before_each_transaction = True
+    
+    microcontroller = minimalmodbus.Instrument('/dev/ttyUSB0', 1)
+    microcontroller.serial.baudrate = BAUDRATE
+    microcontroller.serial.bytesize = BYTESIZES
+    microcontroller.serial.parity = PARITY
+    microcontroller.serial.stopbits = STOPBITS
+    microcontroller.serial.timeout = 0.5
+    microcontroller.mode = MODE
+    microcontroller.clear_buffers_before_each_transaction = True
 
-    coldTank = minimalmodbus.Instrument('/dev/ttyUSB0', 2)
-    coldTank.serial.baudrate = BAUDRATE
-    coldTank.serial.bytesize = BYTESIZES
-    coldTank.serial.parity = PARITY
-    coldTank.serial.stopbits = STOPBITS
-    coldTank.serial.timeout = 0.5
-    coldTank.mode = MODE
-    coldTank.clear_buffers_before_each_transaction = True
+    # # modbus communication of sensor declaration 
+    # mainTank = minimalmodbus.Instrument('/dev/ttyUSB0', 1)
+    # mainTank.serial.baudrate = BAUDRATE
+    # mainTank.serial.bytesize = BYTESIZES
+    # mainTank.serial.parity = PARITY
+    # mainTank.serial.stopbits = STOPBITS
+    # mainTank.serial.timeout = 0.5
+    # mainTank.mode = MODE
+    # mainTank.clear_buffers_before_each_transaction = True
 
-    normalTank = minimalmodbus.Instrument('/dev/ttyUSB0', 3)
-    normalTank.serial.baudrate = BAUDRATE
-    normalTank.serial.bytesize = BYTESIZES
-    normalTank.serial.parity = PARITY
-    normalTank.serial.stopbits = STOPBITS
-    normalTank.serial.timeout = 0.5
-    normalTank.mode = MODE
-    normalTank.clear_buffers_before_each_transaction = True
+    # coldTank = minimalmodbus.Instrument('/dev/ttyUSB0', 2)
+    # coldTank.serial.baudrate = BAUDRATE
+    # coldTank.serial.bytesize = BYTESIZES
+    # coldTank.serial.parity = PARITY
+    # coldTank.serial.stopbits = STOPBITS
+    # coldTank.serial.timeout = 0.5
+    # coldTank.mode = MODE
+    # coldTank.clear_buffers_before_each_transaction = True
 
-def speak(text, name):
+    # normalTank = minimalmodbus.Instrument('/dev/ttyUSB0', 3)
+    # normalTank.serial.baudrate = BAUDRATE
+    # normalTank.serial.bytesize = BYTESIZES
+    # normalTank.serial.parity = PARITY
+    # normalTank.serial.stopbits = STOPBITS
+    # normalTank.serial.timeout = 0.5
+    # normalTank.mode = MODE
+    # normalTank.clear_buffers_before_each_transaction = True
+
+def speak(name):
     try:
         # tts = gTTS(text=text, lang='id', slow=False)
         filename = "asset/sound/"+ name + '.mp3'
         # tts.save(filename)
-        # playsound.playsound(filename, False)
+        playsound(filename)
     except Exception as e:
         print("error play sound file", e)
 
 def machine_ready():
     global main_switch
 
-    main_switch = in_machine_ready.value
+    # main_switch = in_machine_ready.value
     print(f'main switch condition: {main_switch}')
 
     if(main_switch):
@@ -188,8 +177,8 @@ def count_pulse():
     pulse += 1
     print(f'pulse count: {pulse}')
 
-if (not DEBUG) : in_machine_ready.when_activated = machine_ready
-if (not DEBUG) : in_sensor_flow.when_activated = count_pulse 
+# if (not DEBUG) : in_machine_ready.when_activated = machine_ready
+# if (not DEBUG) : in_sensor_flow.when_activated = count_pulse 
 
 class ScreenSplash(MDScreen):
     screen_manager = ObjectProperty(None)
@@ -222,55 +211,62 @@ class ScreenSplash(MDScreen):
         global levelMainTank, levelMainTankArray, maxMainTank
 
     def regular_check(self, *args):
-        global levelColdTank, levelMainTank, levelMainTankArray, levelNormalTank, maxColdTank, maxMainTank, maxNormalTank, out_pump_main, out_valve_cold, out_valve_normal, in_machine_ready
+        global levelColdTank, levelMainTank, levelMainTankArray, levelNormalTank, maxColdTank, maxMainTank, maxNormalTank
+        # global out_pump_main, out_valve_cold, out_valve_normal, in_machine_ready
         global flag_maintenance
         global main_switch
 
         if(not DEBUG) :
-            try:
-                main_switch = in_machine_ready.value
+        #     try:
+                # main_switch = in_machine_ready.value
 
-                if(not flag_maintenance):
-                    if(levelColdTank <= LOW_LOW_LEVEL):
-                        out_pump_main.off() # turn on main pump
-                        out_valve_cold.on() # open cold water valve
+                # if(not flag_maintenance):
+                #     if(levelColdTank <= LOW_LOW_LEVEL):
+                #         # out_pump_main.off() # turn on main pump
+                #         # out_valve_cold.on() # open cold water valve
                         
-                    if(levelNormalTank <= LOW_LOW_LEVEL):
-                        out_pump_main.off() # turn on main pump
-                        out_valve_normal.on() # open normal water valve
+                #     if(levelNormalTank <= LOW_LOW_LEVEL):
+                #         # out_pump_main.off() # turn on main pump
+                #         # out_valve_normal.on() # open normal water valve
 
-                    if(levelColdTank >= HIGH_HIGH_LEVEL):
-                        out_valve_cold.off() # close cold water valve
+                #     if(levelColdTank >= HIGH_HIGH_LEVEL):
+                #         # out_valve_cold.off() # close cold water valve
 
-                    if(levelNormalTank >= HIGH_HIGH_LEVEL):
-                        out_valve_normal.off() # close normal water valve
+                #     if(levelNormalTank >= HIGH_HIGH_LEVEL):
+                #         # out_valve_normal.off() # close normal water valve
 
-                    if(levelNormalTank >= HIGH_LEVEL and levelColdTank >= HIGH_LEVEL):
-                        out_pump_main.on() # turn off main pump
+                #     if(levelNormalTank >= HIGH_LEVEL and levelColdTank >= HIGH_LEVEL):
+                #         # out_pump_main.on() # turn off main pump
 
-            except Exception as e:
-                print(f'Error automate pump: {e}')
+            # except Exception as e:
+            #     print(f'Error automate pump: {e}')
         # program for reading sensor end control system algorithm
+            # try:
+            #     read = mainTank.read_register(0x0101,0,3,False)
+            #     levelMainTank = round(100 - (read * 100 / maxMainTank),2)
+            #     time.sleep(.1)
+            # except Exception as e:
+            #     print(f'Error reading level sensor main tank: {e}')
+                
+        #     try:
+        #         read = coldTank.read_register(0x0101,0,3,False)
+        #         levelColdTank = round(100 - (read * 100 / maxColdTank),2)                
+        #         time.sleep(.1)
+        #     except Exception as e:
+        #         print(f'Error reading level sensor cold tank: {e}')
+
+        #     try:
+        #         read = normalTank.read_register(0x0101,0,3,False)
+        #         levelNormalTank = round(100 - (read * 100 / maxNormalTank),2)    
+        #         time.sleep(.1)
+        #     except Exception as e:
+        #         print(f'Error reading level sensor normal tank: {e}')
             try:
-                read = mainTank.read_register(0x0101,0,3,False)
-                levelMainTank = round(100 - (read * 100 / maxMainTank),2)
+                read = microcontroller.read_register(0x0101,0,3,False)
+                # levelMainTank = round(100 - (read * 100 / maxMainTank),2)
                 time.sleep(.1)
             except Exception as e:
                 print(f'Error reading level sensor main tank: {e}')
-                
-            try:
-                read = coldTank.read_register(0x0101,0,3,False)
-                levelColdTank = round(100 - (read * 100 / maxColdTank),2)                
-                time.sleep(.1)
-            except Exception as e:
-                print(f'Error reading level sensor cold tank: {e}')
-
-            try:
-                read = normalTank.read_register(0x0101,0,3,False)
-                levelNormalTank = round(100 - (read * 100 / maxNormalTank),2)    
-                time.sleep(.1)
-            except Exception as e:
-                print(f'Error reading level sensor normal tank: {e}')
         else:
             main_switch = True
 
@@ -528,13 +524,13 @@ class ScreenChoosePayment(MDScreen):
             self.n_payment_check = 0
             toast("Please pay, and wait for us to verify")
             payment_check = Clock.schedule_interval(self.payment_check, 2)
-            speak("pembayaran melalui gopay dipilih, silahkan scan kode QR yang tampil dilayar pada aplikasi gojek Anda", "pay_gopay")
+            speak("pay_gopay")
 
         elif(method=="QRIS"):
             # ..... create transaction
             qrSource = self.create_transaction(
                 machine_code=MACHINE_CODE,
-                method='qris',
+                method='gopay',
                 product_id=idProduct,
                 product_size=product,
                 qty=1,
@@ -552,7 +548,7 @@ class ScreenChoosePayment(MDScreen):
             self.n_payment_check = 0
             toast("Please pay, and wait for us to verify")
             payment_check = Clock.schedule_interval(self.payment_check, 2)
-            speak("Silahkan lakukan pembayaran dengan menggunakan kode QR yang ada pada layar", "pay_qris")
+            speak("pay_qris")
 
     def create_transaction(self, method, machine_code, product_id, product_size, qty, price, product_type, phone='-'):
         try :
@@ -592,11 +588,11 @@ class ScreenChoosePayment(MDScreen):
                     # toast('payment success')
                     self.screen_manager.current = 'screen_operate'
                     toast("Success! Fit your tumbler then press Start")
-                    speak("Terima kasih, pembayaran berhasil diterima", "pay_succes")
+                    speak("pay_succes")
                     time.sleep(0.5)
-                    speak("silahkan atur ketinggian tumbler Anda dengan menekan tombol up dan down pada layar", "command_tumbler")
+                    speak("command_tumbler")
                     time.sleep(0.5)
-                    speak("tekan tombol start untuk mulai pengisian air, dan tombol stop untuk berhenti", "command_fill")
+                    speak("command_fill")
                     self.transaction_id = ''
 
                 # elif (r.json()['payment_status'] != 'pending'):
@@ -615,7 +611,7 @@ class ScreenChoosePayment(MDScreen):
         else:
             Clock.unschedule(self.payment_check)
             toast("Payment failed, please try again")
-            speak("Maaf, pembayaran gagal, silahkan coba kembali", "pay_failed")
+            speak("pay_failed")
             self.transaction_id = ''
             self.screen_manager.current = 'screen_choose_product'
 
@@ -661,7 +657,7 @@ class ScreenOperate(MDScreen):
 
         print("fill start")
         toast("water filling is started")
-        speak("pengisian air dimulai, mohon tekan tombol stop apabila botol Anda telah penuh", "fill_start")
+        speak("fill_start")
 
     def fill_stop(self):
         global out_pump_cold, out_pump_normal, servo_open, fill_state
@@ -679,7 +675,7 @@ class ScreenOperate(MDScreen):
 
         print("fill stop")
         toast("thank you for decreasing plastic bottle trash by buying our product")
-        speak("terimakasih telah mengurangi sampah botol plastik dengan membeli produk kami", "fill_stop")
+        speak("fill_stop")
         self.screen_manager.current = 'screen_choose_product'
 
     def regular_check(self, *args):
@@ -704,7 +700,7 @@ class ScreenOperate(MDScreen):
                     time.sleep(.5)
                     servo_open = False
                     toast("please put your tumbler")
-                    speak("mohon letakkan tumbler Anda", "put_tumbler")
+                    speak("put_tumbler")
 
             else :
                 self.fill_stop()
